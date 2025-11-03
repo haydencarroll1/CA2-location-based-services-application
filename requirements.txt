@@ -1,0 +1,12 @@
+asgiref==3.10.0
+certifi==2025.10.5
+Django==4.2.25
+django-cors-headers==4.9.0
+django-filter==25.1
+djangorestframework==3.16.1
+djangorestframework-gis==1.2.0
+psycopg2-binary==2.9.11
+python-dotenv==1.2.0
+sqlparse==0.5.3
+gunicorn==21.2.0
+requests==2.32.3
