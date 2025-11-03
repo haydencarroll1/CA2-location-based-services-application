@@ -1,0 +1,41 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dublin Amenities Explorer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <style>
+    .no-geolocation-support #locateMe {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <header class="py-4">
+    <div class="app-shell px-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <span class="badge text-bg-light text-uppercase fw-semibold">Dublin Amenities Explorer</span>
+          <h1 class="h3 fw-semibold mt-2 mb-0">Discover places around Dublin with spatial intelligence</h1>
+        </div>
+        <span class="text-muted small d-none d-md-inline">Discover · Compare · Explore</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-shell px-3 pb-5">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+</body>
+</html>
