@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-shell">
+  <div class="auth-card">
+    <h1 class="auth-title">Sign in</h1>
+    <a class="btn btn-outline-light w-100 mb-2" href="{% url 'socialaccount_login' 'google' %}">Continue with Google</a>
+    <form method="post" class="auth-form">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for field in form %}
+        <div class="auth-field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <div class="auth-error">{{ field.errors|striptags }}</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary w-100">Login</button>
+    </form>
+    <p class="auth-link">Need an account? <a href="{% url 'signup' %}">Sign up</a></p>
+  </div>
+</div>
+{% endblock %}

@@ -9,3 +9,4 @@ sqlparse==0.5.3
 requests==2.32.3
 gunicorn==22.0.0
 whitenoise==6.6.0
+django-allauth==0.57.0

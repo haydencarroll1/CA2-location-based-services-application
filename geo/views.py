@@ -4,11 +4,11 @@ from django.contrib.gis.measure import D
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import ValidationError
 
-from .models import Amenity, Area, Route
-from .serializers import AmenityGeoSerializer, AreaGeoSerializer, RouteGeoSerializer
+from .models import Amenity, Area, Route, Favorite
+from .serializers import AmenityGeoSerializer, AreaGeoSerializer, RouteGeoSerializer, FavoriteSerializer
 
 # ---- CRUD ----
 class AmenityViewSet(viewsets.ModelViewSet):
@@ -25,6 +25,17 @@ class RouteViewSet(viewsets.ModelViewSet):
     queryset = Route.objects.all()
     serializer_class = RouteGeoSerializer
     permission_classes = [AllowAny]
+
+
+class FavoriteViewSet(viewsets.ModelViewSet):
+    serializer_class = FavoriteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Favorite.objects.filter(user=self.request.user).select_related("amenity")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 # ---- Spatial queries ----
 class NearestAmenities(APIView):

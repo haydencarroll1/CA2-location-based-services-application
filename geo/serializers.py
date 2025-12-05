@@ -1,5 +1,6 @@
+from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
-from .models import Amenity, Area, Route
+from .models import Amenity, Area, Route, Favorite
 
 class AmenityGeoSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -18,3 +19,15 @@ class RouteGeoSerializer(GeoFeatureModelSerializer):
         model = Route
         geo_field = "path"
         fields = ("id", "name")
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    amenity = AmenityGeoSerializer(read_only=True)
+    amenity_id = serializers.PrimaryKeyRelatedField(
+        queryset=Amenity.objects.all(), source="amenity", write_only=True
+    )
+    amenity_pk = serializers.IntegerField(source="amenity.id", read_only=True)
+
+    class Meta:
+        model = Favorite
+        fields = ("id", "amenity", "amenity_id", "amenity_pk", "created_at")

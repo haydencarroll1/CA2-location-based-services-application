@@ -3,25 +3,123 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0f1c">
+  <meta name="description" content="Explore Dublin's amenities with an interactive spatial map powered by PostGIS and GeoDjango">
+  
   <title>Dublin Amenities Explorer</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  
+  <!-- Preconnect to external resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://basemaps.cartocdn.com">
+  
+  <!-- Modern Fonts - Plus Jakarta Sans for display, Inter for body -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  
+  <!-- App CSS -->
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  
+  <!-- Favicon (optional - you can create one) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%2306b6d4' rx='20' width='100' height='100'/><text x='50' y='68' text-anchor='middle' fill='white' font-size='45' font-weight='bold'>D</text></svg>">
+  
+  <style>
+    /* Critical CSS - inlined for faster initial render */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #0a0f1c;
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    .app-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #map {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    /* Loading state while JS initializes */
+    .loading-placeholder {
+      position: fixed;
+      inset: 0;
+      background: #0a0f1c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    }
+    .loading-placeholder.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .loading-placeholder__spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #06b6d4;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <header class="py-3 bg-white border-bottom">
-    <div class="app-shell px-3">
-      <h1 class="h4 mb-0">Dublin Amenities Explorer</h1>
-      <p class="text-muted small mb-0">Location-based services for Dublin</p>
+  <!-- Initial loading state -->
+  <div id="loadingPlaceholder" class="loading-placeholder">
+    <div class="loading-placeholder__spinner"></div>
+  </div>
+
+  <header class="auth-bar">
+    <div class="auth-bar__content">
+      <div class="auth-bar__brand">Dublin Amenities Explorer</div>
+      <div class="auth-bar__links">
+        {% if request.user.is_authenticated %}
+          <span class="auth-bar__user">Hi, {{ request.user.username }}</span>
+          <a class="auth-link" href="{% url 'logout' %}?next=/">Logout</a>
+        {% else %}
+          <a class="auth-link" href="{% url 'login' %}">Login</a>
+          <a class="auth-link auth-link--primary" href="{% url 'signup' %}">Sign up</a>
+        {% endif %}
+      </div>
     </div>
   </header>
-
-  <main class="app-shell px-3 py-4">
-    {% block content %}{% endblock %}
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  {% block content %}{% endblock %}
+  
+  <!-- Leaflet JS + feature modules -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="{% static 'js/live_osm.js' %}"></script>
+  <script src="{% static 'js/routing.js' %}"></script>
+  <script src="{% static 'js/heatmap.js' %}"></script>
+  <script src="{% static 'js/weather.js' %}"></script>
+  
+  <script>
+    // Hide loading placeholder when page is ready
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        var placeholder = document.getElementById('loadingPlaceholder');
+        if (placeholder) {
+          placeholder.classList.add('hidden');
+          setTimeout(function() { placeholder.remove(); }, 300);
+        }
+      }, 100);
+    });
+  </script>
 </body>
 </html>

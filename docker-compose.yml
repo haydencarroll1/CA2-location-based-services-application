@@ -3,7 +3,9 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.28.0.0/16
+        - subnet: 172.29.0.0/16
+# could just use default bridge network, but specifying subnet to have static IPs for services
+  
 
 services:
   db:
@@ -17,9 +19,11 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     volumes:
       - db_data:/var/lib/postgresql/data
+      # so data persists even if container is removed
     networks:
       dae_net:
-        ipv4_address: 172.28.0.2
+        ipv4_address: 172.29.0.2
+        # fixed IP for ease of reference from other containers
     ports:
       - "5432:5432"
     healthcheck:
@@ -27,12 +31,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      # checks if postgres is ready
     restart: unless-stopped
 
   web:
     build:
       context: .
       dockerfile: Dockerfile
+      # build web image from Dockerfile in current directory
     container_name: lbs_web
     environment:
       DB_NAME: ${DB_NAME:-dae_db}
@@ -50,7 +56,7 @@ services:
       - static_volume:/app/staticfiles
     networks:
       dae_net:
-        ipv4_address: 172.28.0.3
+        ipv4_address: 172.29.0.3
     expose:
       - "8000"
     depends_on:
@@ -80,7 +86,7 @@ services:
       - static_volume:/app/staticfiles:ro
     networks:
       dae_net:
-        ipv4_address: 172.28.0.4
+        ipv4_address: 172.29.0.4
     ports:
       - "8080:80"
     depends_on:
@@ -108,7 +114,7 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: "False"
     networks:
       dae_net:
-        ipv4_address: 172.28.0.5
+        ipv4_address: 172.29.0.5
     ports:
       - "5050:80"
     volumes:
