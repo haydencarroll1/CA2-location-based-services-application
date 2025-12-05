@@ -40,17 +40,13 @@ services:
       dockerfile: Dockerfile
       # build web image from Dockerfile in current directory
     container_name: lbs_web
+
+    env_file:
+      - .env
+
     environment:
-      DB_NAME: ${DB_NAME:-dae_db}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_HOST: db
-      DB_PORT: "5432"
-      DEBUG: "False"
-      ALLOWED_HOSTS: "localhost,127.0.0.1,web,nginx"
-      SECURE_SSL_REDIRECT: "False"
-      SESSION_COOKIE_SECURE: "False"
-      CSRF_COOKIE_SECURE: "False"
+
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -62,12 +58,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:8000/" ]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 60s
     restart: unless-stopped
     command: >
       sh -c "python manage.py migrate &&
@@ -90,8 +86,7 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      web:
-        condition: service_healthy
+      - web
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "80"]
       interval: 30s
