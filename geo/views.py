@@ -47,6 +47,15 @@ class NearestAmenities(APIView):
             lng = float(request.query_params.get("lng"))
         except (TypeError, ValueError):
             raise ValidationError("Query params 'lat' and 'lng' are required floats.")
+
+        # optional area filter
+        area = None
+        area_id = request.query_params.get("area_id")
+        if area_id:
+            try:
+                area = Area.objects.get(pk=area_id)
+            except Area.DoesNotExist:
+                raise ValidationError("Area not found.")
         
         # get the limit param or default to 10 results
         limit_param = request.query_params.get("limit", "10")
@@ -62,7 +71,10 @@ class NearestAmenities(APIView):
         
         # create point from coords and annotate each amenity with distance from that point
         origin = Point(lng, lat, srid=4326)
-        qs = Amenity.objects.annotate(distance=Distance("location", origin)).order_by("distance")[:limit]
+        qs = Amenity.objects.all()
+        if area:
+            qs = qs.filter(location__within=area.boundary)
+        qs = qs.annotate(distance=Distance("location", origin)).order_by("distance")[:limit]
         
         serializer = AmenityGeoSerializer(qs, many=True)
         return Response(serializer.data)
@@ -115,10 +127,25 @@ class AmenitiesWithinRadius(APIView):
             km = float(request.query_params.get("km", "1.0"))
         except (TypeError, ValueError):
             raise ValidationError("Params 'lat','lng','km' are required floats.")
+
+        if km <= 0:
+            raise ValidationError("Param 'km' must be greater than zero.")
+
+        # optional area filter
+        area = None
+        area_id = request.query_params.get("area_id")
+        if area_id:
+            try:
+                area = Area.objects.get(pk=area_id)
+            except Area.DoesNotExist:
+                raise ValidationError("Area not found.")
         
         # create point and filter amenities within distance using postgis
         origin = Point(lng, lat, srid=4326)
-        qs = Amenity.objects.filter(location__distance_lte=(origin, D(km=km)))
+        qs = Amenity.objects.all()
+        if area:
+            qs = qs.filter(location__within=area.boundary)
+        qs = qs.annotate(distance=Distance("location", origin)).filter(location__distance_lte=(origin, D(km=km))).order_by("distance")
         serializer = AmenityGeoSerializer(qs, many=True)
         return Response(serializer.data)
 

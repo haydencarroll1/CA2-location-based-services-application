@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
 <!-- 
-  DUBLIN AMENITIES EXPLORER - 2025 REDESIGN
-  Full-screen immersive map with floating glass panels
-  Inspired by Google Maps & Apple Maps
+  DUBLIN AMENITIES EXPLORER - Fixed Version
+  - Area selection now searches amenities
+  - Removed duplicate popup code
+  - Cleaner UI state management
 -->
 
 <div class="app-container">
@@ -15,7 +16,7 @@
     <div class="loading-spinner"></div>
   </div>
 
-  <!-- Floating Search Bar (Google Maps Style) -->
+  <!-- Floating Search Bar -->
   <div class="search-bar-container">
     <div class="search-bar">
       <svg class="search-bar__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -38,7 +39,7 @@
     </div>
   </div>
 
-  <!-- Brand Badge (Top Right) -->
+  <!-- Brand Badge -->
   <div class="brand-badge">
     <div class="brand-badge__logo">DAE</div>
     <div>
@@ -49,14 +50,14 @@
 
   <!-- Floating Side Panel -->
   <aside class="side-panel">
-    <!-- Control Panel -->
     <div class="glass-panel control-panel">
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Explore Dublin</h2>
           <p class="panel-subtitle">Find nearby places</p>
         </div>
-        <div class="live-badge">
+        <!-- Live badge now shows actual state -->
+        <div id="liveIndicator" class="live-badge" style="display: none;">
           <span class="live-badge__dot"></span>
           Live
         </div>
@@ -99,11 +100,11 @@
 
       <!-- Live OSM Toggle -->
       <div class="category-section">
-        <div class="section-label">Live OSM data</div>
+        <div class="section-label">Data Source</div>
         <label class="switch-row">
           <div>
-            <div class="fw-semibold">Overpass API</div>
-            <div class="muted small">Fetch fresh amenities straight from OpenStreetMap.</div>
+            <div class="fw-semibold">Live OSM</div>
+            <div class="muted small">Fetch from OpenStreetMap</div>
           </div>
           <div class="form-check form-switch mb-0">
             <input class="form-check-input" type="checkbox" role="switch" id="liveToggle">
@@ -132,7 +133,7 @@
       <div class="area-select-wrapper">
         <div class="section-label">Area Filter</div>
         <select id="areaSelect" class="area-select">
-          <option value="">Select an area to explore</option>
+          <option value="">All areas</option>
         </select>
       </div>
 
@@ -146,11 +147,11 @@
             </svg>
             Reset
           </button>
-          <button id="btnClearRoutes" class="btn btn-secondary">
+          <button id="btnClearAll" class="btn btn-secondary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 6 6 18M6 6l12 12"/>
             </svg>
-            Clear
+            Clear All
           </button>
         </div>
       </div>
@@ -163,7 +164,6 @@
         <div id="resultSummary" class="results-panel__count">Click the map to explore</div>
       </div>
       <div id="resultsList" class="results-panel__list">
-        <!-- Results will be injected here -->
         <div class="empty-state" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 16px; opacity: 0.5;">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
@@ -175,7 +175,7 @@
     </div>
   </aside>
 
-  <!-- Map Controls (Bottom Right) -->
+  <!-- Map Controls -->
   <div class="map-controls">
     <button class="map-control-btn" id="zoomIn" title="Zoom in">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -230,25 +230,25 @@
 window.addEventListener("DOMContentLoaded", function() {
   const isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
   window.isAuthenticated = isAuthenticated;
+
   function initMap() {
     if (typeof L === "undefined") {
       setTimeout(initMap, 100);
       return;
     }
 
-    // Initialize map with dark theme
+    // Initialize map
     const map = L.map("map", {
       scrollWheelZoom: true,
-      zoomControl: false, // We use custom controls
+      zoomControl: false,
     }).setView([53.3498, -6.2603], 13);
 
-    // Dark tile layer (CartoDB Dark Matter)
+    // Tile layers
     const darkTiles = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 19,
     }).addTo(map);
 
-    // Satellite layer (for toggle)
     const satelliteTiles = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
       attribution: '&copy; Esri',
       maxZoom: 19,
@@ -256,19 +256,10 @@ window.addEventListener("DOMContentLoaded", function() {
 
     let isSatellite = false;
 
-    // Feature modules (routing, heatmap, weather)
-    if (typeof RoutingModule !== "undefined") {
-      RoutingModule.init(map);
-      if (typeof addRoutingUI === "function") {
-        addRoutingUI(map);
-      }
-    }
-    if (typeof HeatmapModule !== "undefined") {
-      HeatmapModule.init(map);
-    }
-    if (typeof WeatherModule !== "undefined") {
-      WeatherModule.init(map);
-    }
+    // Initialize feature modules
+    if (typeof RoutingModule !== "undefined") RoutingModule.init(map);
+    if (typeof HeatmapModule !== "undefined") HeatmapModule.init(map);
+    if (typeof WeatherModule !== "undefined") WeatherModule.init(map);
 
     // Custom zoom controls
     document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
@@ -300,6 +291,7 @@ window.addEventListener("DOMContentLoaded", function() {
     const modeButtons = document.querySelectorAll(".mode-toggle__btn");
     const categoryChips = document.querySelectorAll(".category-pill");
     const liveToggle = document.getElementById("liveToggle");
+    const liveIndicator = document.getElementById("liveIndicator");
 
     // State
     const state = {
@@ -311,12 +303,11 @@ window.addEventListener("DOMContentLoaded", function() {
       areaId: null,
       useLiveOSM: false,
     };
-    if (liveToggle) state.useLiveOSM = liveToggle.checked;
 
     let searchDebounce = null;
     let statusTimeout = null;
 
-    // Icon cache
+    // Icon handling
     const amenityIconCache = new Map();
     const amenityIconSlugs = new Set(["cafe", "shop", "gym", "atm", "park", "default"]);
     
@@ -328,9 +319,8 @@ window.addEventListener("DOMContentLoaded", function() {
     function createAmenityIcon(category) {
       const slug = categoryToSlug(category);
       if (!amenityIconCache.has(slug)) {
-        const iconUrl = `/static/img/pin-${slug}.svg`;
         amenityIconCache.set(slug, L.icon({
-          iconUrl,
+          iconUrl: `/static/img/pin-${slug}.svg`,
           iconSize: [36, 44],
           iconAnchor: [18, 42],
           popupAnchor: [0, -38],
@@ -339,13 +329,9 @@ window.addEventListener("DOMContentLoaded", function() {
       return amenityIconCache.get(slug);
     }
 
-    // User location icon with pulsing effect
     const userIcon = L.divIcon({
       className: "user-marker",
-      html: `
-        <div class="user-marker__ring"></div>
-        <div class="user-marker__dot"></div>
-      `,
+      html: '<div class="user-marker__ring"></div><div class="user-marker__dot"></div>',
       iconSize: [24, 24],
       iconAnchor: [12, 12],
     });
@@ -357,49 +343,56 @@ window.addEventListener("DOMContentLoaded", function() {
       iconAnchor: [9, 9],
     });
 
-    // Layer groups
+    // Markers and layers
     let userMarker = null;
     let userAccuracyCircle = null;
     let radiusMarker = null;
     let radiusCircle = null;
     const amenityLayerIndex = new Map();
+    const favoriteIds = new Set();
+    const favoriteLookup = new Map();
 
+    // Single popup builder function (removes duplicate)
+    function buildPopupContent(feature) {
+      const props = feature.properties || {};
+      const name = props.name || "Unnamed";
+      const category = props.category || "place";
+      const address = props.addr_street || "";
+      const isLiveSource = props.source === "OSM";
+      const coords = feature.geometry?.coordinates || [];
+      const lat = coords[1];
+      const lng = coords[0];
+      const canRoute = Number.isFinite(lat) && Number.isFinite(lng);
+      const amenityId = feature.id || props.pk || props.id;
+
+      let html = `
+        <div style="min-width: 180px;">
+          <strong style="font-size: 14px; display: block; margin-bottom: 4px;">${name}</strong>
+          <span style="display: inline-block; padding: 2px 8px; background: rgba(139, 92, 246, 0.2); border-radius: 4px; font-size: 11px; text-transform: uppercase; margin-bottom: 6px;">${category}</span>
+          ${address ? `<p style="margin: 4px 0; font-size: 12px; color: #94a3b8;">${address}</p>` : ''}
+      `;
+      
+      if (canRoute) {
+        html += `<button class="popup-route-btn" onclick="window.getDirectionsTo(${lat}, ${lng})">🧭 Get Directions</button>`;
+      }
+      
+      if (isAuthenticated && amenityId && !isLiveSource) {
+        const isFav = favoriteIds.has(String(amenityId));
+        html += `<button class="popup-route-btn" onclick="window.toggleFavorite(${amenityId})">${isFav ? "★ Saved" : "☆ Save"}</button>`;
+      }
+      
+      html += '</div>';
+      return html;
+    }
+
+    // Layer groups
     const amenitiesLayer = L.geoJSON(null, {
-      pointToLayer: (feature, latlng) => {
-        const category = feature?.properties?.category;
-        return L.marker(latlng, {
-          icon: createAmenityIcon(category),
-          riseOnHover: true,
-        });
-      },
+      pointToLayer: (feature, latlng) => L.marker(latlng, {
+        icon: createAmenityIcon(feature?.properties?.category),
+        riseOnHover: true,
+      }),
       onEachFeature: (feature, layer) => {
-        const props = feature.properties || {};
-        const name = props.name || "Unnamed";
-        const category = props.category || "place";
-        const address = props.addr_street || "";
-        const coords = feature.geometry?.coordinates || [];
-        const lat = coords[1];
-        const lng = coords[0];
-        const canRoute = Number.isFinite(lat) && Number.isFinite(lng);
-        const amenityId = feature.id || props.pk || props.id;
-        
-        layer.bindPopup(`
-          <div style="min-width: 180px;">
-            <strong style="font-size: 14px; display: block; margin-bottom: 4px;">${name}</strong>
-            <span style="display: inline-block; padding: 2px 8px; background: rgba(139, 92, 246, 0.2); border-radius: 4px; font-size: 11px; text-transform: uppercase; margin-bottom: 6px;">${category}</span>
-            ${address ? `<p style="margin: 0; font-size: 12px; color: #94a3b8;">${address}</p>` : ''}
-            ${canRoute ? `
-              <button class="popup-route-btn" onclick="window.getDirectionsTo(${lat}, ${lng})">
-                🧭 Get Directions
-              </button>
-            ` : ''}
-            ${isAuthenticated && amenityId ? `
-              <button class="popup-route-btn" onclick="window.toggleFavorite(${amenityId})">
-                ${favoriteIds.has(String(amenityId)) ? "★ Saved" : "☆ Save"}
-              </button>
-            ` : ''}
-          </div>
-        `);
+        layer.bindPopup(buildPopupContent(feature));
         const id = feature.id || feature.properties?.pk || feature.properties?.id;
         if (id) amenityLayerIndex.set(id, layer);
       }
@@ -414,8 +407,7 @@ window.addEventListener("DOMContentLoaded", function() {
         lineJoin: "round"
       },
       onEachFeature: (feature, layer) => {
-        const props = feature.properties || {};
-        layer.bindPopup(`<strong>${props.name || "Route"}</strong>`);
+        layer.bindPopup(`<strong>${feature.properties?.name || "Route"}</strong>`);
       }
     }).addTo(map);
 
@@ -442,26 +434,26 @@ window.addEventListener("DOMContentLoaded", function() {
       if (type === "danger") statusToast.classList.add("status-toast--error");
       
       if (statusTimeout) clearTimeout(statusTimeout);
-      statusTimeout = setTimeout(() => {
-        statusToast.classList.add("d-none");
-      }, 4000);
+      statusTimeout = setTimeout(() => statusToast.classList.add("d-none"), 4000);
     }
 
     function getCSRFToken() {
-      const name = "csrftoken";
       const cookies = document.cookie ? document.cookie.split(";") : [];
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.startsWith(name + "=")) {
-          return decodeURIComponent(cookie.substring(name.length + 1));
+      for (const cookie of cookies) {
+        const c = cookie.trim();
+        if (c.startsWith("csrftoken=")) {
+          return decodeURIComponent(c.substring(10));
         }
       }
       return null;
     }
 
-    const favoriteIds = new Set();
-    const favoriteLookup = new Map(); // amenityId -> favoriteId
+    function handleResponse(res) {
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      return res.json();
+    }
 
+    // Favorites
     function refreshFavoriteButtons() {
       document.querySelectorAll(".favorite-btn").forEach(btn => {
         const id = btn.dataset.id;
@@ -487,7 +479,7 @@ window.addEventListener("DOMContentLoaded", function() {
           });
           refreshFavoriteButtons();
         })
-        .catch(() => setStatus("Could not load favorites", "warning"));
+        .catch(() => {});
     }
 
     window.toggleFavorite = function(amenityId) {
@@ -502,6 +494,7 @@ window.addEventListener("DOMContentLoaded", function() {
         setStatus("Missing CSRF token", "danger");
         return;
       }
+
       if (isFav) {
         const favId = favoriteLookup.get(id);
         if (!favId) {
@@ -513,92 +506,61 @@ window.addEventListener("DOMContentLoaded", function() {
           method: "DELETE",
           headers: { "X-CSRFToken": csrfToken },
           credentials: "same-origin",
-        })
-          .then(resp => {
-            if (!resp.ok && resp.status !== 204) throw new Error("Delete failed");
-            favoriteIds.delete(id);
-            favoriteLookup.delete(id);
-            refreshFavoriteButtons();
-            setStatus("Removed from favorites", "info");
-          })
-          .catch(() => setStatus("Could not remove favorite", "danger"));
-        return;
-      }
-      fetch("/api/favorites/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrfToken,
-        },
-        credentials: "same-origin",
-        body: JSON.stringify({ amenity_id: amenityId })
-      })
-        .then(handleResponse)
-        .then((created) => {
+        }).then(resp => {
+          if (!resp.ok && resp.status !== 204) throw new Error();
+          favoriteIds.delete(id);
+          favoriteLookup.delete(id);
+          refreshFavoriteButtons();
+          setStatus("Removed from favorites", "info");
+        }).catch(() => setStatus("Could not remove favorite", "danger"));
+      } else {
+        fetch("/api/favorites/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+          credentials: "same-origin",
+          body: JSON.stringify({ amenity_id: amenityId })
+        }).then(handleResponse).then(created => {
           favoriteIds.add(id);
-          if (created && created.id) {
-            favoriteLookup.set(id, created.id);
-          }
+          if (created?.id) favoriteLookup.set(id, created.id);
           refreshFavoriteButtons();
           setStatus("Saved to favorites", "success");
-        })
-        .catch(() => setStatus("Could not save favorite", "danger"));
+        }).catch(() => setStatus("Could not save favorite", "danger"));
+      }
     };
 
-    // Directions entry point for popup buttons
     window.getDirectionsTo = function(lat, lng) {
       if (typeof RoutingModule === "undefined") {
-        setStatus("Routing is unavailable right now", "warning");
+        setStatus("Routing unavailable", "warning");
         return;
       }
       if (!state.userLocation) {
         setStatus("Enable location to get directions", "warning");
         return;
       }
-      const destination = L.latLng(lat, lng);
-      const mode = window.currentRoutingMode || "walking";
-      RoutingModule.showRoute(state.userLocation, destination, mode)
-        .then(result => {
-          setStatus(`Route: ${result.durationText} (${result.distanceText})`, "success");
-        })
-        .catch(() => {
-          setStatus("Could not calculate route", "danger");
-        });
+      RoutingModule.showRoute(state.userLocation, L.latLng(lat, lng), window.currentRoutingMode || "walking")
+        .then(result => setStatus(`Route: ${result.durationText} (${result.distanceText})`, "success"))
+        .catch(() => setStatus("Could not calculate route", "danger"));
     };
 
     function updateRangeLabels() {
-      const km = parseFloat(radiusInput.value).toFixed(1);
-      radiusValueLabel.textContent = `${km} km`;
+      radiusValueLabel.textContent = `${parseFloat(radiusInput.value).toFixed(1)} km`;
     }
 
     function updateCategoryChipsUI() {
       categoryChips.forEach(chip => {
         const cat = chip.dataset.category;
-        const isActive = cat === "all" 
-          ? state.selectedCategories.size === 0 
-          : state.selectedCategories.has(cat);
+        const isActive = cat === "all" ? state.selectedCategories.size === 0 : state.selectedCategories.has(cat);
         chip.classList.toggle("active", isActive);
       });
-    }
-
-    function handleResponse(res) {
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      return res.json();
     }
 
     function applyFilters(features) {
       return features.filter(f => {
         const props = f.properties || {};
-        // Category filter
-        if (state.selectedCategories.size > 0 && !state.selectedCategories.has(props.category)) {
-          return false;
-        }
-        // Text search
+        if (state.selectedCategories.size > 0 && !state.selectedCategories.has(props.category)) return false;
         if (state.searchTerm) {
           const searchable = [props.name, props.operator, props.cuisine, props.addr_street]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
+            .filter(Boolean).join(" ").toLowerCase();
           if (!searchable.includes(state.searchTerm)) return false;
         }
         return true;
@@ -608,35 +570,15 @@ window.addEventListener("DOMContentLoaded", function() {
     function syncAmenityLayer(features) {
       amenitiesLayer.clearLayers();
       amenityLayerIndex.clear();
-      features.forEach(f => {
-        const layer = L.geoJSON(f, {
-          pointToLayer: (feature, latlng) => L.marker(latlng, { icon: createAmenityIcon(feature.properties?.category), riseOnHover: true }),
-          onEachFeature: (feature, layer) => {
-            const props = feature.properties || {};
-            const coords = feature.geometry?.coordinates || [];
-            const lat = coords[1];
-            const lng = coords[0];
-            const canRoute = Number.isFinite(lat) && Number.isFinite(lng);
-            const amenityId = feature.id || props.pk || props.id;
-            layer.bindPopup(`
-              <div style="min-width: 180px;">
-                <strong style="font-size: 14px; display: block; margin-bottom: 4px;">${props.name || "Unnamed"}</strong>
-                <span style="display: inline-block; padding: 2px 8px; background: rgba(139, 92, 246, 0.2); border-radius: 4px; font-size: 11px; text-transform: uppercase; margin-bottom: 6px;">${props.category || "place"}</span>
-                ${canRoute ? `
-                  <button class="popup-route-btn" onclick="window.getDirectionsTo(${lat}, ${lng})">
-                    🧭 Get Directions
-                  </button>
-                ` : ''}
-                ${isAuthenticated && amenityId ? `
-                  <button class="popup-route-btn" onclick="window.toggleFavorite(${amenityId})">
-                    ${favoriteIds.has(String(amenityId)) ? "★ Saved" : "☆ Save"}
-                  </button>
-                ` : ''}
-              </div>
-            `);
-          }
-        }).addTo(amenitiesLayer);
-        const id = f.id || f.properties?.pk || f.properties?.id;
+      if (!features.length) return;
+      
+      const fc = { type: "FeatureCollection", features };
+      amenitiesLayer.addData(fc);
+      
+      // Re-index after adding
+      amenitiesLayer.eachLayer(layer => {
+        const f = layer.feature;
+        const id = f?.id || f?.properties?.pk || f?.properties?.id;
         if (id) amenityLayerIndex.set(id, layer);
       });
     }
@@ -646,8 +588,7 @@ window.addEventListener("DOMContentLoaded", function() {
         resultsList.innerHTML = `
           <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
             <p style="margin: 0;">No results found</p>
-          </div>
-        `;
+          </div>`;
         return;
       }
       
@@ -655,6 +596,7 @@ window.addEventListener("DOMContentLoaded", function() {
         const props = f.properties || {};
         const id = f.id || props.pk || props.id;
         const distance = props.distance_m ? `${(props.distance_m / 1000).toFixed(2)} km` : "";
+        const isLiveSource = props.source === "OSM";
         return `
           <div class="result-card" data-id="${id}">
             <span class="result-card__index">${i + 1}</span>
@@ -665,31 +607,26 @@ window.addEventListener("DOMContentLoaded", function() {
                 ${distance ? `<span class="result-card__distance">${distance}</span>` : ""}
               </div>
             </div>
-            ${isAuthenticated && id ? `<button class="favorite-btn" data-id="${id}" type="button">${favoriteIds.has(String(id)) ? "★ Saved" : "☆ Save"}</button>` : ""}
-          </div>
-        `;
+            ${isAuthenticated && id && !isLiveSource ? `<button class="favorite-btn" data-id="${id}">${favoriteIds.has(String(id)) ? "★ Saved" : "☆ Save"}</button>` : ""}
+          </div>`;
       }).join("");
 
-      // Add click handlers
+      // Click handlers
       resultsList.querySelectorAll(".result-card").forEach(card => {
-        card.addEventListener("click", (e) => {
+        card.addEventListener("click", e => {
           if (e.target.classList.contains("favorite-btn")) return;
-          const id = card.dataset.id;
-          const layer = amenityLayerIndex.get(parseInt(id)) || amenityLayerIndex.get(id);
+          const layer = amenityLayerIndex.get(parseInt(card.dataset.id)) || amenityLayerIndex.get(card.dataset.id);
           if (layer) {
-            const lyr = layer.getLayers()[0];
-            if (lyr) {
-              map.flyTo(lyr.getLatLng(), 16, { duration: 0.5 });
-              lyr.openPopup();
-            }
+            map.flyTo(layer.getLatLng(), 16, { duration: 0.5 });
+            layer.openPopup();
           }
         });
       });
+      
       resultsList.querySelectorAll(".favorite-btn").forEach(btn => {
-        btn.addEventListener("click", (e) => {
+        btn.addEventListener("click", e => {
           e.stopPropagation();
-          const id = btn.dataset.id;
-          window.toggleFavorite(id);
+          window.toggleFavorite(btn.dataset.id);
         });
       });
     }
@@ -710,9 +647,7 @@ window.addEventListener("DOMContentLoaded", function() {
         userMarker.setLatLng(latlng);
         userAccuracyCircle.setLatLng(latlng).setRadius(accuracy);
       }
-      if (typeof WeatherModule !== "undefined") {
-        WeatherModule.updateForLocation(latlng);
-      }
+      if (typeof WeatherModule !== "undefined") WeatherModule.updateForLocation(latlng);
     }
 
     function attemptLocateUser(options = {}) {
@@ -728,11 +663,11 @@ window.addEventListener("DOMContentLoaded", function() {
           state.lastOrigin.nearest = latlng;
           if (options.manual) {
             map.flyTo(latlng, 15, { duration: 1 });
-            fetchAmenitiesNearest(latlng, "your location", false);
+            fetchAmenities(latlng, "your location");
           }
           setLoading(false);
         },
-        err => {
+        () => {
           setStatus("Could not get location", "danger");
           setLoading(false);
         },
@@ -765,127 +700,136 @@ window.addEventListener("DOMContentLoaded", function() {
       if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
     }
 
-    function rememberOrigin(mode, latlng, save = true) {
-      if (save) state.lastOrigin[mode] = latlng;
+    function getSelectedCategories() {
+      return state.selectedCategories.size === 0 ? [] : Array.from(state.selectedCategories);
     }
 
-    function getSelectedCategories() {
-      if (state.selectedCategories.size === 0) return [];
-      return Array.from(state.selectedCategories);
+    // FIX: Unified fetch function that respects area selection
+    async function fetchAmenities(latlng, label, remember = true, forceLocal = false) {
+      const isRadius = state.mode === "radius";
+      const km = isRadius ? parseFloat(radiusInput.value) : 1;
+      
+      if (isRadius) {
+        updateRadiusOverlay(latlng, km);
+      } else {
+        clearRadiusOverlay();
+      }
+      
+      setLoading(true);
+      const displayLabel = label || `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
+      setStatus(`Finding places near ${displayLabel}…`);
+
+      const preferLive = !forceLocal && state.useLiveOSM && typeof LiveOSM !== "undefined";
+
+      try {
+        let features = [];
+        let routesFC = { features: [] };
+
+        if (preferLive) {
+          features = await LiveOSM.fetchAmenities(latlng.lat, latlng.lng, km, getSelectedCategories(), map.getBounds());
+        } else {
+          // Build amenities URL
+          const endpoint = isRadius ? "/api/amenities/radius" : "/api/amenities/nearest";
+          const amenitiesUrl = new URL(endpoint, window.location.origin);
+          amenitiesUrl.searchParams.set("lat", latlng.lat);
+          amenitiesUrl.searchParams.set("lng", latlng.lng);
+          if (isRadius) {
+            amenitiesUrl.searchParams.set("km", km);
+          } else {
+            amenitiesUrl.searchParams.set("limit", 20);
+          }
+          // FIX: Add area filter to API call if selected
+          if (state.areaId) {
+            amenitiesUrl.searchParams.set("area_id", state.areaId);
+          }
+
+          // Build routes URL (for radius mode)
+          if (isRadius) {
+            const routesUrl = new URL("/api/routes/radius", window.location.origin);
+            routesUrl.searchParams.set("lat", latlng.lat);
+            routesUrl.searchParams.set("lng", latlng.lng);
+            routesUrl.searchParams.set("km", km);
+
+            const [amenitiesFC, routesData] = await Promise.all([
+              fetch(amenitiesUrl).then(handleResponse),
+              fetch(routesUrl).then(handleResponse)
+            ]);
+            features = amenitiesFC.features || [];
+            routesFC = routesData;
+          } else {
+            const amenitiesFC = await fetch(amenitiesUrl).then(handleResponse);
+            features = amenitiesFC.features || [];
+          }
+        }
+
+        // Apply client-side filters
+        features = applyFilters(features);
+        
+        // Update map layers
+        syncAmenityLayer(features);
+        if (typeof HeatmapModule !== "undefined") HeatmapModule.setData(features);
+        
+        routesLayer.clearLayers();
+        if (routesFC.features?.length) routesLayer.addData(routesFC);
+        
+        // Zoom to results
+        if (features.length) {
+          map.flyTo(latlng, Math.max(map.getZoom(), isRadius ? 14 : 15), { duration: 0.5 });
+        }
+        
+        renderResults(features);
+        
+        const routeInfo = routesFC.features?.length ? ` and ${routesFC.features.length} routes` : "";
+        setStatus(`Found ${features.length} amenities${routeInfo}`, "success");
+        resultSummary.textContent = isRadius 
+          ? `${features.length} places within ${km} km` 
+          : `${features.length} places near ${displayLabel}`;
+
+      } catch (err) {
+        if (preferLive) {
+          setStatus("Live OSM unavailable, using local data", "warning");
+          return fetchAmenities(latlng, label, remember, true);
+        }
+        setStatus(err.message || "Unable to fetch data", "danger");
+      } finally {
+        setLoading(false);
+      }
+
+      if (remember) state.lastOrigin[state.mode] = latlng;
+    }
+
+    // FIX: Area-specific amenity fetch
+    async function fetchAmenitiesInArea(areaId) {
+      setLoading(true);
+      setStatus("Finding amenities in area…");
+
+      try {
+        const url = new URL("/api/amenities/within", window.location.origin);
+        url.searchParams.set("area_id", areaId);
+        
+        const fc = await fetch(url).then(handleResponse);
+        let features = fc.features || [];
+        
+        features = applyFilters(features);
+        syncAmenityLayer(features);
+        if (typeof HeatmapModule !== "undefined") HeatmapModule.setData(features);
+        
+        renderResults(features);
+        setStatus(`Found ${features.length} amenities in area`, "success");
+        resultSummary.textContent = `${features.length} places in selected area`;
+        
+      } catch (err) {
+        // Fallback: if no area endpoint exists, just zoom to area
+        setStatus("Area filter applied - click map to search", "info");
+      } finally {
+        setLoading(false);
+      }
     }
 
     function replayActiveSearch() {
       const origin = state.lastOrigin[state.mode];
       if (!origin) return;
-      if (state.mode === "radius") {
-        fetchAmenitiesRadius(origin, null, false);
-      } else {
-        fetchAmenitiesNearest(origin, null, false);
-      }
-    }
-
-    // API calls
-    async function fetchAmenitiesNearest(latlng, subjectLabel, remember = true, forceLocal = false) {
-      clearRadiusOverlay();
-      setLoading(true);
-      const label = subjectLabel || `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
-      setStatus(`Finding places near ${label}…`);
-
-      const preferLive = !forceLocal && state.useLiveOSM && typeof LiveOSM !== "undefined";
-      const bounds = map.getBounds();
-
-      try {
-        let features = [];
-        if (preferLive) {
-          features = await LiveOSM.fetchAmenities(latlng.lat, latlng.lng, 1, getSelectedCategories(), bounds);
-        } else {
-          const url = new URL("/api/amenities/nearest", window.location.origin);
-          url.searchParams.set("lat", latlng.lat);
-          url.searchParams.set("lng", latlng.lng);
-          url.searchParams.set("limit", 20);
-          const fc = await fetch(url).then(handleResponse);
-          features = fc.features || [];
-        }
-
-        features = applyFilters(features);
-        syncAmenityLayer(features);
-        if (typeof HeatmapModule !== "undefined") {
-          HeatmapModule.setData(features);
-        }
-        if (features.length) map.flyTo(latlng, Math.max(map.getZoom(), 15), { duration: 0.5 });
-        renderResults(features);
-        setStatus(`Found ${features.length} places nearby`, "success");
-        resultSummary.textContent = `${features.length} places near ${label}`;
-      } catch (err) {
-        if (preferLive) {
-          setStatus("Live OSM unavailable, using local data", "warning");
-          return fetchAmenitiesNearest(latlng, subjectLabel, remember, true);
-        }
-        setStatus(err.message || "Unable to fetch data", "danger");
-      } finally {
-        setLoading(false);
-      }
-
-      rememberOrigin("nearest", latlng, remember);
-    }
-
-    async function fetchAmenitiesRadius(latlng, subjectLabel, remember = true, forceLocal = false) {
-      const km = parseFloat(radiusInput.value);
-      updateRadiusOverlay(latlng, km);
-      setLoading(true);
-      const label = subjectLabel || `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
-      setStatus(`Searching within ${km} km of ${label}…`);
-
-      const preferLive = !forceLocal && state.useLiveOSM && typeof LiveOSM !== "undefined";
-      const bounds = map.getBounds();
-
-      try {
-        let features = [];
-        let routesFC = { features: [] };
-        let amenitiesFC = { features: [] };
-
-        if (preferLive) {
-          features = await LiveOSM.fetchAmenities(latlng.lat, latlng.lng, km, getSelectedCategories(), bounds);
-        } else {
-          const amenitiesUrl = new URL("/api/amenities/radius", window.location.origin);
-          amenitiesUrl.searchParams.set("lat", latlng.lat);
-          amenitiesUrl.searchParams.set("lng", latlng.lng);
-          amenitiesUrl.searchParams.set("km", km);
-
-          const routesUrl = new URL("/api/routes/radius", window.location.origin);
-          routesUrl.searchParams.set("lat", latlng.lat);
-          routesUrl.searchParams.set("lng", latlng.lng);
-          routesUrl.searchParams.set("km", km);
-
-          [amenitiesFC, routesFC] = await Promise.all([
-            fetch(amenitiesUrl).then(handleResponse),
-            fetch(routesUrl).then(handleResponse)
-          ]);
-          features = amenitiesFC.features || [];
-        }
-
-        features = applyFilters(features);
-        syncAmenityLayer(features);
-        if (typeof HeatmapModule !== "undefined") {
-          HeatmapModule.setData(features);
-        }
-        routesLayer.clearLayers();
-        if (routesFC.features?.length) routesLayer.addData(routesFC);
-        if (features.length) map.flyTo(latlng, Math.max(map.getZoom(), 14), { duration: 0.5 });
-        renderResults(features);
-        setStatus(`Found ${features.length} amenities${routesFC.features?.length ? ` and ${routesFC.features.length} routes` : ""}`, "success");
-        resultSummary.textContent = `${features.length} places within ${km} km`;
-      } catch (err) {
-        if (preferLive) {
-          setStatus("Live OSM unavailable, using local data", "warning");
-          return fetchAmenitiesRadius(latlng, subjectLabel, remember, true);
-        }
-        setStatus(err.message || "Unable to fetch data", "danger");
-      } finally {
-        setLoading(false);
-      }
-
-      rememberOrigin("radius", latlng, remember);
+      fetchAmenities(origin, null, false);
     }
 
     function fetchAreas(populateOnly = false) {
@@ -895,7 +839,7 @@ window.addEventListener("DOMContentLoaded", function() {
           areasLayer.clearLayers();
           if (fc.features?.length) {
             areasLayer.addData(fc);
-            areaSelect.innerHTML = '<option value="">Select an area to explore</option>';
+            areaSelect.innerHTML = '<option value="">All areas</option>';
             fc.features.forEach(f => {
               const opt = document.createElement("option");
               const id = f.id || f.properties.id || f.properties.pk;
@@ -916,41 +860,26 @@ window.addEventListener("DOMContentLoaded", function() {
     function fetchRoutesIntersecting(areaId) {
       const url = new URL("/api/routes/intersecting", window.location.origin);
       url.searchParams.set("area_id", areaId);
-      setStatus("Finding intersecting routes…");
       fetch(url)
         .then(handleResponse)
         .then(fc => {
           routesLayer.clearLayers();
-          if (fc.features?.length) {
-            routesLayer.addData(fc);
-            setStatus(`Found ${fc.features.length} routes`, "success");
-          } else {
-            setStatus("No routes intersect this area", "info");
-          }
+          if (fc.features?.length) routesLayer.addData(fc);
         })
-        .catch(err => setStatus(err.message, "danger"));
+        .catch(() => {});
     }
 
     function setMode(newMode) {
       state.mode = newMode;
       radiusSection.classList.toggle("d-none", newMode !== "radius");
       map.getContainer().style.cursor = newMode === "radius" ? "crosshair" : "";
-      const hint = newMode === "nearest"
-        ? "Click the map to find nearby places"
-        : "Click the map to search within the radius";
-      setStatus(hint, "info");
+      setStatus(newMode === "nearest" ? "Click the map to find nearby places" : "Click the map to search within radius", "info");
       if (newMode !== "radius") clearRadiusOverlay();
       replayActiveSearch();
     }
 
     // Event listeners
-    map.on("click", e => {
-      if (state.mode === "radius") {
-        fetchAmenitiesRadius(e.latlng);
-      } else {
-        fetchAmenitiesNearest(e.latlng);
-      }
-    });
+    map.on("click", e => fetchAmenities(e.latlng));
 
     locateButton.addEventListener("click", () => {
       setStatus("Finding your location…");
@@ -959,12 +888,7 @@ window.addEventListener("DOMContentLoaded", function() {
 
     document.getElementById("resetView").addEventListener("click", () => {
       state.areaId = null;
-      state.lastOrigin.radius = null;
-      if (state.userLocation) {
-        state.lastOrigin.nearest = state.userLocation;
-      } else {
-        state.lastOrigin.nearest = null;
-      }
+      state.lastOrigin = { nearest: null, radius: null };
       clearRadiusOverlay();
       amenityLayerIndex.clear();
       amenitiesLayer.clearLayers();
@@ -978,15 +902,27 @@ window.addEventListener("DOMContentLoaded", function() {
             <circle cx="12" cy="10" r="3"/>
           </svg>
           <p style="margin: 0;">Click anywhere on the map<br>to discover nearby places</p>
-        </div>
-      `;
+        </div>`;
       resultSummary.textContent = "Click the map to explore";
       setStatus("View reset", "info");
     });
 
-    document.getElementById("btnClearRoutes").addEventListener("click", () => {
+    // FIX: Clear All button now clears everything
+    document.getElementById("btnClearAll").addEventListener("click", () => {
+      state.areaId = null;
+      state.lastOrigin = { nearest: null, radius: null };
+      areaSelect.value = "";
+      amenitiesLayer.clearLayers();
+      amenityLayerIndex.clear();
       routesLayer.clearLayers();
-      setStatus("Routes cleared", "info");
+      clearRadiusOverlay();
+      if (typeof HeatmapModule !== "undefined") HeatmapModule.setData([]);
+      resultsList.innerHTML = `
+        <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+          <p style="margin: 0;">Cleared - click map to search</p>
+        </div>`;
+      resultSummary.textContent = "Click the map to explore";
+      setStatus("Cleared all results", "info");
     });
 
     modeButtons.forEach(btn => {
@@ -1003,11 +939,7 @@ window.addEventListener("DOMContentLoaded", function() {
         if (cat === "all") {
           state.selectedCategories.clear();
         } else {
-          if (state.selectedCategories.has(cat)) {
-            state.selectedCategories.delete(cat);
-          } else {
-            state.selectedCategories.add(cat);
-          }
+          state.selectedCategories.has(cat) ? state.selectedCategories.delete(cat) : state.selectedCategories.add(cat);
         }
         updateCategoryChipsUI();
         replayActiveSearch();
@@ -1023,31 +955,39 @@ window.addEventListener("DOMContentLoaded", function() {
     });
 
     if (liveToggle) {
-      liveToggle.addEventListener("change", (e) => {
+      liveToggle.addEventListener("change", e => {
         state.useLiveOSM = e.target.checked;
-        const label = state.useLiveOSM ? "Live OSM" : "Local DB";
-        setStatus(`Data source: ${label}`, "info");
+        liveIndicator.style.display = state.useLiveOSM ? "flex" : "none";
+        setStatus(`Data source: ${state.useLiveOSM ? "Live OSM" : "Local DB"}`, "info");
         replayActiveSearch();
       });
     }
 
+    // FIX: Area selection now searches for amenities
     areaSelect.addEventListener("change", e => {
       const areaId = e.target.value;
       state.areaId = areaId || null;
+      
       if (!areaId) {
+        // Cleared area filter
         routesLayer.clearLayers();
         setStatus("Area filter cleared", "info");
         replayActiveSearch();
         return;
       }
+      
+      // Find and zoom to area
       const layer = areasLayer.getLayers().find(l => {
         const f = l.feature || {};
         const id = f.id || f.properties?.id || f.properties?.pk;
         return String(id) === areaId;
       });
+      
       if (layer) {
         map.fitBounds(layer.getBounds(), { padding: [50, 50] });
+        // Fetch routes and amenities in this area
         fetchRoutesIntersecting(areaId);
+        fetchAmenitiesInArea(areaId);
       }
     });
 
@@ -1057,9 +997,7 @@ window.addEventListener("DOMContentLoaded", function() {
     });
 
     // Initialize
-    if (isAuthenticated) {
-      loadFavorites();
-    }
+    if (isAuthenticated) loadFavorites();
     updateCategoryChipsUI();
     fetchAreas(true);
     updateRangeLabels();

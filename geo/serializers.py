@@ -3,10 +3,21 @@ from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from .models import Amenity, Area, Route, Favorite
 
 class AmenityGeoSerializer(GeoFeatureModelSerializer):
+    distance_m = serializers.SerializerMethodField()
+
+    def get_distance_m(self, obj):
+        dist = getattr(obj, "distance", None)
+        if dist is None:
+            return None
+        try:
+            return float(dist.m)
+        except Exception:
+            return None
+
     class Meta:
         model = Amenity
         geo_field = "location"
-        fields = ("id", "name", "category", "description")
+        fields = ("id", "name", "category", "description", "distance_m")
 
 class AreaGeoSerializer(GeoFeatureModelSerializer):
     class Meta:
