@@ -166,7 +166,7 @@ body {
    -------------------------------------------------------------------------- */
 .app-container {
   position: relative;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -185,7 +185,8 @@ body {
    -------------------------------------------------------------------------- */
 .search-bar-container {
   position: absolute;
-  top: calc(60px + var(--safe-top));
+  /* Leave clear space below the fixed header on small screens */
+  top: calc(80px + var(--safe-top));
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
@@ -1032,6 +1033,54 @@ body {
   color: var(--accent-primary);
   text-decoration: none;
   font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   Small-Screen Optimisations (max-width: 600px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .auth-bar__content {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .auth-bar__brand {
+    font-size: 0.95rem;
+  }
+
+  .auth-bar__content {
+    flex-wrap: wrap;
+  }
+
+  .auth-bar__links {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .auth-link {
+    padding-inline: 10px;
+    font-size: 0.8rem;
+  }
+
+  /* Make sure the search bar clears a taller header on very small screens */
+  .search-bar-container {
+    top: calc(90px + var(--safe-top));
+    padding-inline: 10px;
+  }
+
+  .side-panel {
+    max-height: 65vh;
+  }
+
+  .auth-shell {
+    align-items: flex-start;
+    padding-top: calc(84px + var(--safe-top));
+  }
+
+  .auth-card {
+    margin-top: 12px;
+    padding: 20px 16px;
+  }
 }
 
 /* --------------------------------------------------------------------------
