@@ -228,7 +228,7 @@
 
 <script>
 window.addEventListener("DOMContentLoaded", function() {
-  const isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
+  const isAuthenticated = "{{ request.user.is_authenticated|yesno:'true,false' }}" === "true";
   window.isAuthenticated = isAuthenticated;
 
   function initMap() {
@@ -358,7 +358,6 @@ window.addEventListener("DOMContentLoaded", function() {
       const name = props.name || "Unnamed";
       const category = props.category || "place";
       const address = props.addr_street || "";
-      const isLiveSource = props.source === "OSM";
       const coords = feature.geometry?.coordinates || [];
       const lat = coords[1];
       const lng = coords[0];
@@ -376,7 +375,7 @@ window.addEventListener("DOMContentLoaded", function() {
         html += `<button class="popup-route-btn" onclick="window.getDirectionsTo(${lat}, ${lng})">🧭 Get Directions</button>`;
       }
       
-      if (isAuthenticated && amenityId && !isLiveSource) {
+      if (isAuthenticated && amenityId) {
         const isFav = favoriteIds.has(String(amenityId));
         html += `<button class="popup-route-btn" onclick="window.toggleFavorite(${amenityId})">${isFav ? "★ Saved" : "☆ Save"}</button>`;
       }
@@ -596,7 +595,6 @@ window.addEventListener("DOMContentLoaded", function() {
         const props = f.properties || {};
         const id = f.id || props.pk || props.id;
         const distance = props.distance_m ? `${(props.distance_m / 1000).toFixed(2)} km` : "";
-        const isLiveSource = props.source === "OSM";
         return `
           <div class="result-card" data-id="${id}">
             <span class="result-card__index">${i + 1}</span>
@@ -607,7 +605,7 @@ window.addEventListener("DOMContentLoaded", function() {
                 ${distance ? `<span class="result-card__distance">${distance}</span>` : ""}
               </div>
             </div>
-            ${isAuthenticated && id && !isLiveSource ? `<button class="favorite-btn" data-id="${id}">${favoriteIds.has(String(id)) ? "★ Saved" : "☆ Save"}</button>` : ""}
+            ${isAuthenticated && id ? `<button class="favorite-btn" data-id="${id}">${favoriteIds.has(String(id)) ? "★ Saved" : "☆ Save"}</button>` : ""}
           </div>`;
       }).join("");
 
@@ -804,7 +802,7 @@ window.addEventListener("DOMContentLoaded", function() {
       setStatus("Finding amenities in area…");
 
       try {
-        const url = new URL("/api/amenities/within", window.location.origin);
+        const url = new URL("/api/amenities/in-area", window.location.origin);
         url.searchParams.set("area_id", areaId);
         
         const fc = await fetch(url).then(handleResponse);
@@ -909,14 +907,10 @@ window.addEventListener("DOMContentLoaded", function() {
 
     // FIX: Clear All button now clears everything
     document.getElementById("btnClearAll").addEventListener("click", () => {
-      state.areaId = null;
-      state.lastOrigin = { nearest: null, radius: null };
-      areaSelect.value = "";
       amenitiesLayer.clearLayers();
       amenityLayerIndex.clear();
       routesLayer.clearLayers();
       clearRadiusOverlay();
-      if (typeof HeatmapModule !== "undefined") HeatmapModule.setData([]);
       resultsList.innerHTML = `
         <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
           <p style="margin: 0;">Cleared - click map to search</p>
