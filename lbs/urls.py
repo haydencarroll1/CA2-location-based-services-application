@@ -19,21 +19,19 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from geo.views import (
     AmenityViewSet, AreaViewSet, RouteViewSet, FavoriteViewSet,
-    NearestAmenities, AmenitiesWithinArea, RoutesIntersectingArea, 
+    NearestAmenities, AmenitiesWithinArea, RoutesIntersectingArea,
     AmenitiesWithinRadius, RoutesWithinRadius
 )
-from geo.views_auth import SignupView
 
 router = DefaultRouter()
-router.register(r'amenities', AmenityViewSet, basename='amenity')
-router.register(r'areas', AreaViewSet, basename='area')
-router.register(r'routes', RouteViewSet, basename='route')
-router.register(r'favorites', FavoriteViewSet, basename='favorite')
+router.register(r"amenities", AmenityViewSet, basename="amenity")
+router.register(r"areas", AreaViewSet, basename="area")
+router.register(r"routes", RouteViewSet, basename="route")
+router.register(r"favorites", FavoriteViewSet, basename="favorite")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("accounts/signup/", SignupView.as_view(), name="signup"),
-    path("accounts/", include("django.contrib.auth.urls")),
+    # allauth handles login / logout / signup / social logins
     path("accounts/", include("allauth.urls")),
     path("api/", include(router.urls)),
     path("api/amenities/nearest", NearestAmenities.as_view()),

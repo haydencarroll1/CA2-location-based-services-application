@@ -15,11 +15,11 @@
       </svg>
       Continue with Google
     </a>
-    
+
     <div class="auth-divider">
       <span>or sign in with email</span>
     </div>
-    
+
     <form method="post" class="auth-form" novalidate>
       {% csrf_token %}
       {% if form.non_field_errors %}
@@ -36,10 +36,11 @@
       {% endfor %}
       <button type="submit" class="btn btn-primary btn-full">Sign in</button>
     </form>
-    
+
     <p class="auth-footer">
       Need an account? <a href="{% url 'account_signup' %}" class="auth-footer__link">Sign up</a>
     </p>
   </div>
 </div>
 {% endblock %}
+

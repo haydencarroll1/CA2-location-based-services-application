@@ -102,12 +102,19 @@
       <div class="auth-bar__links">
         {% if request.user.is_authenticated %}
           <span class="auth-bar__user">{{ request.user.username }}</span>
-          <a class="auth-link" href="{% url 'logout' %}?next=/">Logout</a>
+          <a class="auth-link" href="{% url 'profile' %}">Profile</a>
+          <a class="auth-link" href="{% url 'account_logout' %}?next=/">Logout</a>
         {% else %}
-          <a class="auth-link" href="{% url 'login' %}">Login</a>
-          <a class="auth-link auth-link--primary" href="{% url 'signup' %}">Sign up</a>
+          <a class="auth-link" href="{% url 'account_login' %}">Login</a>
+          <a class="auth-link auth-link--primary" href="{% url 'account_signup' %}">Sign up</a>
         {% endif %}
       </div>
+      <!-- Mobile: compact account button in top-right -->
+      {% if request.user.is_authenticated %}
+        <a class="auth-bar__menu-btn" href="{% url 'profile' %}">Account</a>
+      {% else %}
+        <a class="auth-bar__menu-btn" href="{% url 'account_login' %}">Sign in</a>
+      {% endif %}
     </div>
   </header>
   
@@ -118,7 +125,6 @@
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script src="{% static 'js/live_osm.js' %}"></script>
   <script src="{% static 'js/routing.js' %}"></script>
-  <script src="{% static 'js/heatmap.js' %}"></script>
   <script src="{% static 'js/weather.js' %}"></script>
   
   <script>

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-shell">
+  <div class="auth-card profile-card">
+    <h1 class="auth-title">Your profile</h1>
+    <p class="auth-subtitle">Signed in as {{ request.user.username }}</p>
+
+    <section class="profile-section">
+      <h2 class="profile-section__title">Account details</h2>
+      <dl class="profile-details">
+        <div class="profile-details__row">
+          <dt>Username</dt>
+          <dd>{{ request.user.username }}</dd>
+        </div>
+        <div class="profile-details__row">
+          <dt>Email</dt>
+          <dd>
+            {% if request.user.email %}
+              {{ request.user.email }}
+            {% else %}
+              <span class="profile-details__muted">Not set</span>
+            {% endif %}
+          </dd>
+        </div>
+        <div class="profile-details__row">
+          <dt>Joined</dt>
+          <dd>{{ request.user.date_joined|date:"j M Y" }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="profile-section">
+      <h2 class="profile-section__title">Saved places</h2>
+      {% if favorites %}
+        <ul class="favorites-list">
+          {% for fav in favorites %}
+            <li class="favorites-list__item">
+              <div class="favorites-list__primary">
+                <div class="favorites-list__name">{{ fav.amenity.name }}</div>
+                <div class="favorites-list__meta">
+                  <span class="favorites-list__category">{{ fav.amenity.get_category_display }}</span>
+                  <span class="favorites-list__date">
+                    Saved {{ fav.created_at|date:"j M Y H:i" }}
+                  </span>
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="profile-details__muted">
+          You haven’t saved any favourites yet. Use the map to star places you like and they’ll show up here.
+        </p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}
+
