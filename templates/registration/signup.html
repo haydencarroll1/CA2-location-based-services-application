@@ -3,21 +3,31 @@
 <div class="auth-shell">
   <div class="auth-card">
     <h1 class="auth-title">Create account</h1>
-    <form method="post" class="auth-form">
+    <p class="auth-subtitle">Start exploring Dublin's amenities</p>
+    
+    <form method="post" class="auth-form" novalidate>
       {% csrf_token %}
-      {{ form.non_field_errors }}
+      {% if form.non_field_errors %}
+        <div class="auth-error auth-error--form">{{ form.non_field_errors|striptags }}</div>
+      {% endif %}
       {% for field in form %}
         <div class="auth-field">
           <label for="{{ field.id_for_label }}">{{ field.label }}</label>
           {{ field }}
+          {% if field.help_text %}
+            <div class="auth-hint">{{ field.help_text|striptags }}</div>
+          {% endif %}
           {% if field.errors %}
             <div class="auth-error">{{ field.errors|striptags }}</div>
           {% endif %}
         </div>
       {% endfor %}
-      <button type="submit" class="btn btn-primary w-100">Sign up</button>
+      <button type="submit" class="btn btn-primary btn-full">Create account</button>
     </form>
-    <p class="auth-link">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+    
+    <p class="auth-footer">
+      Already have an account? <a href="{% url 'login' %}" class="auth-footer__link">Sign in</a>
+    </p>
   </div>
 </div>
 {% endblock %}
