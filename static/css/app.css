@@ -95,6 +95,34 @@ body {
 }
 
 /* --------------------------------------------------------------------------
+   Global Loading Placeholder (initial screen)
+   -------------------------------------------------------------------------- */
+.loading-placeholder {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  transition: opacity var(--transition-base);
+}
+
+.loading-placeholder.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-placeholder__spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* --------------------------------------------------------------------------
    Auth Bar (Header)
    -------------------------------------------------------------------------- */
 .auth-bar {
@@ -1080,9 +1108,9 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   Small-Screen Optimisations (max-width: 600px)
+   Header & Search: Compact layout (max-width: 900px)
    -------------------------------------------------------------------------- */
-@media (max-width: 600px) {
+@media (max-width: 900px) {
   .auth-bar__content {
     padding: 10px 12px;
     gap: 8px;
@@ -1092,7 +1120,6 @@ body {
     font-size: 0.95rem;
   }
 
-  /* Compact header: hide full link row, show single account button */
   .auth-bar__links {
     display: none;
   }
@@ -1110,6 +1137,12 @@ body {
     display: block;
   }
 
+}
+
+/* --------------------------------------------------------------------------
+   Bottom sheet panel & auth spacing (phones & small tablets)
+   -------------------------------------------------------------------------- */
+@media (max-width: 767.98px) {
   .filters-toggle {
     display: inline-flex;
     margin: 10px 0 6px;
@@ -1133,6 +1166,7 @@ body {
     margin-top: 12px;
     padding: 20px 16px;
   }
+
 }
 
 /* --------------------------------------------------------------------------
@@ -1177,24 +1211,17 @@ body {
   display: none; /* We use custom controls */
 }
 
-/* Offset Leaflet controls so they sit below the fixed
-   auth header and (on mobile) the floating search bar. */
-.leaflet-top {
-  top: 64px !important;
+/* Offset Leaflet controls so they sit below the fixed auth header */
+.leaflet-top,
+.leaflet-control-container .leaflet-top,
+.leaflet-top.leaflet-left,
+.leaflet-top.leaflet-right {
+  top: calc(70px + var(--safe-top)) !important;
 }
 
-@media (max-width: 767.98px) {
-  .leaflet-top,
-  .leaflet-control-container .leaflet-top,
-  .leaflet-top.leaflet-left,
-  .leaflet-top.leaflet-right {
-    top: calc(120px + var(--safe-top)) !important;
-  }
-
-  /* Keep a small gap from the top of the Leaflet region */
-  .leaflet-top .weather-widget {
-    margin-top: 8px !important;
-  }
+/* Keep a small gap from the top of the Leaflet region */
+.leaflet-top .weather-widget {
+  margin-top: 8px !important;
 }
 
 .leaflet-control-attribution {
@@ -1493,11 +1520,6 @@ body {
     left: 420px;
     transform: none;
     max-width: 320px;
-  }
-  
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
   }
   
   .auth-card {
