@@ -110,7 +110,7 @@ const WeatherModule = (function() {
    * Add weather widget to map
    */
   function addWeatherWidget() {
-    weatherControl = L.control({ position: 'topleft' });
+    weatherControl = L.control({ position: 'topright' });
     
     weatherControl.onAdd = function() {
       const div = L.DomUtil.create('div', 'weather-widget');
@@ -192,6 +192,8 @@ const WeatherModule = (function() {
     style.id = 'weather-widget-styles';
     style.textContent = `
       .weather-widget {
+        position: relative;
+        z-index: 60;
         background: rgba(17, 24, 39, 0.9);
         backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.1);

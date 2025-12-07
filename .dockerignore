@@ -34,6 +34,12 @@ staticfiles/
 !README.md
 docs/
 
+# Cordova / mobile build artifacts (very large, not needed in image)
+mobile/platforms/
+mobile/plugins/
+mobile/node_modules/
+mobile/www/
+
 # test data that you might not want in image
 lectures/
 scripts/
