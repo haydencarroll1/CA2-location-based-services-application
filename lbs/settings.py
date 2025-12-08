@@ -15,7 +15,11 @@ if "GEOS_LIBRARY_PATH" in os.environ:
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")]
+
+# ALLOWED_HOSTS - include Azure domain by default
+default_hosts = ["127.0.0.1", "localhost", "dae-ca2.francecentral.cloudapp.azure.com"]
+env_hosts = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
+ALLOWED_HOSTS = env_hosts if env_hosts else default_hosts
 
 if not SECRET_KEY:
     if DEBUG:
