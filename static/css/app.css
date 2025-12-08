@@ -563,9 +563,8 @@ code, pre {
 }
 
 .auth-bar__content {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: var(--space-3) var(--space-4);
+  width: 100%;
+  padding: var(--space-3) var(--space-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -574,8 +573,38 @@ code, pre {
 }
 
 .auth-bar__brand {
-  font-weight: var(--font-semibold);
-  font-size: var(--text-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: opacity var(--duration-fast);
+}
+
+.auth-bar__brand:hover {
+  opacity: 0.85;
+}
+
+.auth-bar__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-lg);
+  flex-shrink: 0;
+}
+
+.auth-bar__logo svg {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.auth-bar__brand-text {
+  font-weight: var(--font-bold);
+  font-size: var(--text-lg);
   color: var(--text-primary);
   white-space: nowrap;
 }
@@ -603,7 +632,7 @@ code, pre {
 .auth-bar__user {
   color: var(--text-secondary);
   font-size: var(--text-sm);
-  display: none;
+  margin-right: var(--space-2);
 }
 
 .auth-link {
@@ -630,6 +659,14 @@ code, pre {
 }
 
 @media (max-width: 767px) {
+  .auth-bar__content {
+    padding: var(--space-3) var(--space-4);
+  }
+  
+  .auth-bar__brand-text {
+    font-size: var(--text-md);
+  }
+  
   .auth-bar__links {
     display: none;
   }
@@ -639,7 +676,7 @@ code, pre {
   }
 
   .auth-bar__user {
-    display: inline;
+    display: none;
   }
 }
 

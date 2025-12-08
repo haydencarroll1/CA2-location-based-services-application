@@ -129,7 +129,7 @@
         <!-- Radius Controls (Hidden by default) -->
         <div id="radiusControls" class="range-control d-none" style="margin-top: var(--space-3);">
           <div class="range-control__header">
-            <span class="range-control__label">Pin Search Radius</span>
+            <span class="range-control__label">Search Radius</span>
             <span id="radiusValue" class="range-control__value">1.0 km</span>
           </div>
           <input 
@@ -1104,6 +1104,15 @@ window.addEventListener("DOMContentLoaded", function() {
     }
 
     function replayActiveSearch() {
+      // In nearby mode, always use user location
+      if (state.mode === "nearest") {
+        if (state.userLocation) {
+          fetchAmenities(state.userLocation, "your location", false);
+        }
+        return;
+      }
+      
+      // In radius mode, use last clicked location
       const origin = state.lastOrigin[state.mode];
       if (!origin) return;
       fetchAmenities(origin, null, false);
@@ -1151,16 +1160,24 @@ window.addEventListener("DOMContentLoaded", function() {
       radiusSection.classList.toggle("d-none", newMode !== "radius");
       map.getContainer().style.cursor = newMode === "radius" ? "crosshair" : "";
       const areaNote = state.areaId ? " (within selected area)" : "";
-      setStatus(newMode === "nearest" ? "Tap the map to find nearby places" : `Drop a pin to search within radius${areaNote}`, "info");
-      if (newMode !== "radius") clearRadiusOverlay();
-      replayActiveSearch();
+      
+      if (newMode === "nearest") {
+        setStatus("Use the locate button to find places near you", "info");
+        // In nearby mode, if we have user location, search there
+        if (state.userLocation) {
+          fetchAmenities(state.userLocation, "your location", true);
+        }
+      } else {
+        setStatus(`Drop a pin on the map to search within radius${areaNote}`, "info");
+        clearRadiusOverlay();
+      }
     }
 
     // =========================================================================
     // EVENT LISTENERS
     // =========================================================================
     
-    // MAP CLICK - Minimize sheet AND search
+    // MAP CLICK - Only triggers search in "Drop a Pin" (radius) mode
     map.on("click", e => {
       // Check if click was on a marker or popup
       if (e.originalEvent.target.closest('.leaflet-marker-icon, .leaflet-popup')) {
@@ -1170,8 +1187,10 @@ window.addEventListener("DOMContentLoaded", function() {
       // Minimize sheet first
       SheetController.minimize();
       
-      // Then search
-      fetchAmenities(e.latlng);
+      // Only search on click in radius mode
+      if (state.mode === "radius") {
+        fetchAmenities(e.latlng);
+      }
     });
 
     // Location buttons
@@ -1236,14 +1255,23 @@ window.addEventListener("DOMContentLoaded", function() {
       });
     });
 
-    // Category chips
+    // Category chips - clicking one category shows only that category
+    // clicking the same one again clears the filter (shows all)
     categoryChips.forEach(chip => {
       chip.addEventListener("click", () => {
         const cat = chip.dataset.category;
         if (cat === "all") {
+          // Clear all filters - show everything
           state.selectedCategories.clear();
         } else {
-          state.selectedCategories.has(cat) ? state.selectedCategories.delete(cat) : state.selectedCategories.add(cat);
+          // If this category is the only one selected, clear it (toggle off)
+          // Otherwise, select only this category
+          if (state.selectedCategories.size === 1 && state.selectedCategories.has(cat)) {
+            state.selectedCategories.clear();
+          } else {
+            state.selectedCategories.clear();
+            state.selectedCategories.add(cat);
+          }
         }
         updateCategoryChipsUI();
         replayActiveSearch();
