@@ -30,11 +30,10 @@ const LiveOSM = (function() {
 
   function buildQuery(lat, lng, km, categories, bounds) {
     const radiusMeters = Math.max(50, Math.min(5000, km * 1000));
-    const hasCats = Array.isArray(categories) && categories.length > 0;
-    const requested = hasCats ? categories.filter(c => ALLOWED.includes(c)) : ALLOWED;
-    const amenityPattern = requested.includes("cafe") || requested.includes("atm") || requested.includes("gym") ? "cafe|restaurant|fast_food|ice_cream|pub|bar|atm|bank|fitness_centre|gym" : "";
-    const shopPattern = requested.includes("shop") ? "convenience|supermarket|department_store|mall" : "";
-    const leisurePattern = requested.includes("park") ? "park|garden|recreation_ground" : "";
+    // Always fetch ALL categories so local filtering/re-filtering works
+    const amenityPattern = "cafe|restaurant|fast_food|ice_cream|pub|bar|atm|bank|fitness_centre|gym";
+    const shopPattern = "convenience|supermarket|department_store|mall";
+    const leisurePattern = "park|garden|recreation_ground";
 
     // If we have map bounds, prefer bbox (south,west,north,east)
     let bboxClause = "";
@@ -79,7 +78,7 @@ const LiveOSM = (function() {
     `;
   }
 
-  function elementToFeature(el, requestedCats) {
+  function elementToFeature(el) {
     const center = el.type === "node"
       ? { lat: el.lat, lon: el.lon }
       : el.center;
@@ -89,10 +88,8 @@ const LiveOSM = (function() {
     const normalized = normalizeCategory(props);
     if (!normalized) return null;
 
-    // If UI requested specific categories, filter here too
-    if (Array.isArray(requestedCats) && requestedCats.length > 0 && !requestedCats.includes(normalized)) {
-      return null;
-    }
+    // Don't filter by category here - let the UI handle filtering
+    // so that re-filtering works without re-fetching
 
     const name = props.name || "Unnamed";
 
@@ -131,7 +128,7 @@ const LiveOSM = (function() {
     if (!resp.ok) throw new Error(`Overpass error: ${resp.status}`);
     const data = await resp.json();
     const features = (data.elements || [])
-      .map(el => elementToFeature(el, categories))
+      .map(el => elementToFeature(el))
       .filter(Boolean);
     return features;
   }

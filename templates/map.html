@@ -217,16 +217,16 @@
       <div class="side-panel__section" style="flex: 1; display: flex; flex-direction: column; min-height: 200px;">
         <div class="results-panel__header">
           <h3 class="results-panel__title">Results</h3>
-          <span id="resultSummary" class="results-panel__count">Tap the map to explore</span>
+          <span id="resultSummary" class="results-panel__count">Use locate or drop a pin to explore</span>
         </div>
         <div id="resultsList" class="results-panel__list" style="flex: 1; overflow-y: auto;">
           <div class="results-empty">
-            <svg class="results-empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-              <circle cx="12" cy="10" r="3"/>
+            <svg class="results-empty__icon" viewBox="0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\">
+              <path d=\"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z\"/>
+              <circle cx=\"12\" cy=\"10\" r=\"3\"/>
             </svg>
-            <div class="results-empty__title">Get Started</div>
-            <p class="results-empty__text">Tap the map to find nearby places or drop a pin to search within a radius</p>
+            <div class=\"results-empty__title\">Get Started</div>
+            <p class=\"results-empty__text\">Use the locate button to find places near you, or switch to \"Drop a Pin\" mode to search anywhere</p>
           </div>
         </div>
       </div>
@@ -515,6 +515,7 @@ window.addEventListener("DOMContentLoaded", function() {
       areaId: null,
       useLiveOSM: false,
       locationAsked: false,
+      lastFeatures: [], // Store raw features for re-filtering
     };
 
     let searchDebounce = null;
@@ -810,11 +811,23 @@ window.addEventListener("DOMContentLoaded", function() {
       if (typeof WeatherModule !== "undefined") WeatherModule.updateForLocation(latlng);
     }
 
+    // Fallback location (Dublin city center) when geolocation unavailable
+    const DUBLIN_CENTER = L.latLng(53.3498, -6.2603);
+    
+    function useDefaultLocation(message) {
+      setStatus(message, "warning");
+      state.lastOrigin.nearest = DUBLIN_CENTER;
+      map.flyTo(DUBLIN_CENTER, 14, { duration: 1 });
+      fetchAmenities(DUBLIN_CENTER, "Dublin city center");
+    }
+
     function attemptLocateUser(options = {}) {
       // Check if geolocation is supported
       if (!navigator.geolocation) {
         if (options.manual) {
           setStatus("Geolocation not supported by your browser", "danger");
+        } else {
+          useDefaultLocation("Geolocation not supported. Showing Dublin city center.");
         }
         return;
       }
@@ -824,9 +837,8 @@ window.addEventListener("DOMContentLoaded", function() {
       const isSecure = window.isSecureContext || isLocalhost;
       
       if (!isSecure) {
-        if (options.manual) {
-          setStatus("Location requires HTTPS. Please use a secure connection.", "danger");
-        }
+        // On non-secure origins, use Dublin center as fallback
+        useDefaultLocation("Location unavailable (HTTPS required). Showing Dublin city center.");
         return;
       }
 
@@ -858,7 +870,8 @@ window.addEventListener("DOMContentLoaded", function() {
           setUserLocation(latlng, pos.coords.accuracy);
           state.lastOrigin.nearest = latlng;
           
-          if (options.manual) {
+          // Always fly to location and search when in nearby mode or manual click
+          if (options.manual || state.mode === "nearest") {
             map.flyTo(latlng, 15, { duration: 1 });
             fetchAmenities(latlng, "your location");
           }
@@ -918,6 +931,27 @@ window.addEventListener("DOMContentLoaded", function() {
         }
         return true;
       });
+    }
+
+    // Re-filter existing results without fetching new data
+    function refilterResults() {
+      if (!state.lastFeatures.length) return;
+      
+      const filtered = applyFilters(state.lastFeatures);
+      syncAmenityLayer(filtered);
+      renderResults(filtered);
+      
+      // Update summary
+      const totalCount = state.lastFeatures.length;
+      const filteredCount = filtered.length;
+      const categoryName = state.selectedCategories.size === 1 
+        ? Array.from(state.selectedCategories)[0] 
+        : "places";
+      resultSummary.textContent = state.selectedCategories.size > 0
+        ? `${filteredCount} ${categoryName} (of ${totalCount} total)`
+        : `${filteredCount} places`;
+      
+      setStatus(`Showing ${filteredCount} of ${totalCount} places`, "info");
     }
 
     function syncAmenityLayer(features) {
@@ -1036,8 +1070,8 @@ window.addEventListener("DOMContentLoaded", function() {
         let features = [];
 
         if (state.useLiveOSM && !forceLocal && typeof LiveOSM !== "undefined") {
-          const categories = getSelectedCategories();
-          features = await LiveOSM.fetchAmenities(latlng.lat, latlng.lng, km, categories);
+          // Fetch all categories, filtering happens locally via applyFilters()
+          features = await LiveOSM.fetchAmenities(latlng.lat, latlng.lng, km);
           setStatus(`Found ${features.length} places via OSM`, "success");
         } else {
           // Use different endpoints based on mode
@@ -1059,6 +1093,9 @@ window.addEventListener("DOMContentLoaded", function() {
           features = fc.features || [];
         }
 
+        // Store raw features for re-filtering
+        state.lastFeatures = features;
+        
         const filtered = applyFilters(features);
         syncAmenityLayer(filtered);
         renderResults(filtered);
@@ -1087,6 +1124,10 @@ window.addEventListener("DOMContentLoaded", function() {
         
         const fc = await fetch(url).then(handleResponse);
         const features = fc.features || [];
+        
+        // Store raw features for re-filtering
+        state.lastFeatures = features;
+        
         const filtered = applyFilters(features);
         
         syncAmenityLayer(filtered);
@@ -1226,9 +1267,9 @@ window.addEventListener("DOMContentLoaded", function() {
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
             <circle cx="12" cy="10" r="3"/>
           </svg>
-          <p style="margin: 0;">Tap the map to find places<br>Use ${state.mode === 'radius' ? 'Drop a Pin' : 'Nearby'} mode above</p>
+          <p style="margin: 0;">${state.mode === 'radius' ? 'Drop a pin on the map to search' : 'Use the locate button to find nearby places'}</p>
         </div>`;
-      resultSummary.textContent = "Tap the map to explore";
+      resultSummary.textContent = "Use locate or drop a pin to explore";
       setStatus("View reset", "info");
     });
 
@@ -1274,7 +1315,8 @@ window.addEventListener("DOMContentLoaded", function() {
           }
         }
         updateCategoryChipsUI();
-        replayActiveSearch();
+        // Re-filter existing results instead of re-fetching
+        refilterResults();
       });
     });
 
@@ -1288,7 +1330,8 @@ window.addEventListener("DOMContentLoaded", function() {
           searchInputs.forEach(other => {
             if (other !== input) other.value = input.value;
           });
-          replayActiveSearch();
+          // Re-filter existing results instead of re-fetching
+          refilterResults();
         }, 200);
       });
     });

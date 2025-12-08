@@ -149,6 +149,10 @@ default_csrf_trusted = [
     "http://127.0.0.1",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
+    "http://dae-ca2.francecentral.cloudapp.azure.com",
+    "https://dae-ca2.francecentral.cloudapp.azure.com",
+    "http://dae-ca2.francecentral.cloudapp.azure.com:8080",
+    "https://dae-ca2.francecentral.cloudapp.azure.com:8080",
 ]
 env_csrf_trusted = [
     origin.strip()
