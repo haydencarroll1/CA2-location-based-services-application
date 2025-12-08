@@ -1,59 +1,115 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="auth-shell">
-  <div class="auth-card profile-card">
-    <h1 class="auth-title">Your profile</h1>
-    <p class="auth-subtitle">Signed in as {{ request.user.username }}</p>
+<div class="profile-page">
+  <div class="profile-container">
+    <!-- Profile Header Card -->
+    <div class="profile-card">
+      <div class="profile-card__header">
+        <div class="profile-card__avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div class="profile-card__info">
+          <h1 class="profile-card__name">{{ request.user.username }}</h1>
+          <p>Member since {{ request.user.date_joined|date:"M Y" }}</p>
+        </div>
+      </div>
+      
+      <!-- Stats Grid -->
+      <div class="profile-stat-grid">
+        <div class="profile-stat">
+          <div class="profile-stat__value">{{ favorites|length|default:"0" }}</div>
+          <div class="profile-stat__label">Saved Places</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat__value">{{ request.user.date_joined|timesince }}</div>
+          <div class="profile-stat__label">Account Age</div>
+        </div>
+      </div>
+    </div>
 
-    <section class="profile-section">
-      <h2 class="profile-section__title">Account details</h2>
-      <dl class="profile-details">
-        <div class="profile-details__row">
-          <dt>Username</dt>
-          <dd>{{ request.user.username }}</dd>
+    <!-- Account Details Card -->
+    <div class="profile-card">
+      <div class="profile-section">
+        <h2 class="profile-section__title">Account Details</h2>
+        <div class="profile-details">
+          <div class="profile-detail-row">
+            <span class="profile-detail-row__label">Username</span>
+            <span class="profile-detail-row__value">{{ request.user.username }}</span>
+          </div>
+          <div class="profile-detail-row">
+            <span class="profile-detail-row__label">Email</span>
+            <span class="profile-detail-row__value">
+              {% if request.user.email %}
+                {{ request.user.email }}
+              {% else %}
+                <span class="profile-detail-row__muted">Not set</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="profile-detail-row">
+            <span class="profile-detail-row__label">Joined</span>
+            <span class="profile-detail-row__value">{{ request.user.date_joined|date:"j M Y" }}</span>
+          </div>
         </div>
-        <div class="profile-details__row">
-          <dt>Email</dt>
-          <dd>
-            {% if request.user.email %}
-              {{ request.user.email }}
-            {% else %}
-              <span class="profile-details__muted">Not set</span>
-            {% endif %}
-          </dd>
-        </div>
-        <div class="profile-details__row">
-          <dt>Joined</dt>
-          <dd>{{ request.user.date_joined|date:"j M Y" }}</dd>
-        </div>
-      </dl>
-    </section>
+      </div>
+    </div>
 
-    <section class="profile-section">
-      <h2 class="profile-section__title">Saved places</h2>
-      {% if favorites %}
-        <ul class="favorites-list">
-          {% for fav in favorites %}
-            <li class="favorites-list__item">
-              <div class="favorites-list__primary">
-                <div class="favorites-list__name">{{ fav.amenity.name }}</div>
-                <div class="favorites-list__meta">
-                  <span class="favorites-list__category">{{ fav.amenity.get_category_display }}</span>
-                  <span class="favorites-list__date">
-                    Saved {{ fav.created_at|date:"j M Y H:i" }}
-                  </span>
+    <!-- Saved Places Card -->
+    <div class="profile-card">
+      <div class="profile-section">
+        <h2 class="profile-section__title">Saved Places</h2>
+        {% if favorites %}
+          <div class="favorites-list">
+            {% for fav in favorites %}
+              <div class="favorite-item">
+                <span class="favorite-item__icon">
+                  {% if fav.amenity.category == 'cafe' %}☕
+                  {% elif fav.amenity.category == 'shop' %}🛒
+                  {% elif fav.amenity.category == 'gym' %}💪
+                  {% elif fav.amenity.category == 'atm' %}🏧
+                  {% elif fav.amenity.category == 'park' %}🌳
+                  {% else %}📍{% endif %}
+                </span>
+                <div class="favorite-item__info">
+                  <div class="favorite-item__name">{{ fav.amenity.name }}</div>
+                  <div class="favorite-item__category">{{ fav.amenity.get_category_display }} · Saved {{ fav.created_at|date:"j M Y" }}</div>
                 </div>
               </div>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p class="profile-details__muted">
-          You haven’t saved any favourites yet. Use the map to star places you like and they’ll show up here.
-        </p>
-      {% endif %}
-    </section>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="profile-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            <p>You haven't saved any places yet</p>
+            <span>Star places on the map and they'll appear here</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="profile-actions">
+      <a href="{% url 'map' %}" class="profile-btn profile-btn--primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        Explore Map
+      </a>
+      <a href="{% url 'account_logout' %}?next=/" class="profile-btn profile-btn--secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Sign Out
+      </a>
+    </div>
   </div>
 </div>
 {% endblock %}
-

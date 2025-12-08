@@ -22,12 +22,14 @@
   </div>
 
   <!-- Floating Search Bar (desktop / tablet) -->
-  <div class="search-bar-container search-bar-container--top">
+  <div class="search-container">
     <div class="search-bar">
-      <svg class="search-bar__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"/>
-        <path d="m21 21-4.3-4.3"/>
-      </svg>
+      <div class="search-bar__icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.3-4.3"/>
+        </svg>
+      </div>
       <input 
         type="search" 
         class="search-bar__input" 
@@ -36,19 +38,16 @@
         data-role="search-input"
       >
       <button class="search-bar__btn" title="Use my location" data-role="locate-button">
-        <img src="{% static 'img/mac-location.svg' %}" alt="Use my location" class="search-bar__btn-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>
+        </svg>
+        Locate
       </button>
     </div>
   </div>
 
-  <!-- Brand Badge -->
-  <div class="brand-badge">
-    <div class="brand-badge__logo">DAE</div>
-    <div>
-      <div class="brand-badge__text">Dublin Explorer</div>
-      <div class="brand-badge__tech">Leaflet · PostGIS</div>
-    </div>
-  </div>
+
 
   <!-- Location Permission Banner (shown when needed) -->
   <div id="locationBanner" class="location-banner d-none">
@@ -62,30 +61,21 @@
 
   <!-- Floating Side Panel / Bottom Sheet -->
   <aside class="side-panel" data-role="results-sheet" data-state="half">
-    <!-- Larger touch target for dragging -->
+    <!-- Drag Handle (mobile only) -->
     <button type="button" class="side-panel__handle" id="sheetHandle" aria-label="Drag to resize">
       <span class="side-panel__handle-bar"></span>
     </button>
     
-    <div class="glass-panel control-panel">
-      <div class="panel-header">
-        <div>
-          <h2 class="panel-title">Explore Dublin</h2>
-          <p class="panel-subtitle">Find nearby places</p>
-        </div>
-        <div id="liveIndicator" class="live-badge" style="display: none;">
-          <span class="live-badge__dot"></span>
-          Live
-        </div>
-      </div>
-
-      <!-- Mobile search bar inside the sheet -->
-      <div class="search-bar-container search-bar-container--sheet">
+    <!-- Header -->
+    <div class="side-panel__header">
+      <div class="side-panel__search mobile-only">
         <div class="search-bar">
-          <svg class="search-bar__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.3-4.3"/>
-          </svg>
+          <div class="search-bar__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.3-4.3"/>
+            </svg>
+          </div>
           <input 
             type="search" 
             class="search-bar__input" 
@@ -94,127 +84,150 @@
             data-role="search-input"
           >
           <button class="search-bar__btn" title="Use my location" data-role="locate-button">
-            <img src="{% static 'img/mac-location.svg' %}" alt="Use my location" class="search-bar__btn-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>
+            </svg>
           </button>
         </div>
       </div>
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3);">
+        <div>
+          <h2 style="font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--text-primary); margin: 0;">Explore Dublin</h2>
+          <p style="font-size: var(--text-sm); color: var(--text-tertiary); margin: var(--space-1) 0 0;">Find nearby places</p>
+        </div>
+        <div id="liveIndicator" class="live-badge" style="display: none;">
+          <span class="live-badge__dot"></span>
+          Live
+        </div>
+      </div>
+    </div>
 
-      <!-- Mobile Filters Toggle -->
-      <button type="button" id="filtersToggle" class="filters-toggle" aria-expanded="false">
-        <span class="filters-toggle__icon">⚙️</span>
-        <span class="filters-toggle__label">Filters</span>
-      </button>
-
-      <!-- Filter controls (can collapse on mobile) -->
-      <div class="filters-section">
-        <!-- Mode Toggle -->
+    <!-- Scrollable Content -->
+    <div class="side-panel__content">
+      <!-- Controls Section -->
+      <div class="side-panel__section">
+        <div class="side-panel__section-title">Search Mode</div>
         <div class="mode-toggle" role="group" aria-label="Search mode">
           <button type="button" class="mode-toggle__btn active" data-mode="nearest">
-            <span>📍</span> Nearby
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            Nearby
           </button>
           <button type="button" class="mode-toggle__btn" data-mode="radius">
-            <span>⭕</span> Radius
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+              <line x1="12" y1="22" x2="12" y2="17"/>
+            </svg>
+            Drop a Pin
           </button>
         </div>
-
-        <!-- Categories -->
-        <div class="category-section">
-          <div class="section-label">Categories</div>
-          <div id="categoryChips" class="category-pills">
-            <button class="category-pill active" data-category="all">
-              <span class="category-pill__icon">✨</span> All
-            </button>
-            <button class="category-pill" data-category="cafe">
-              <span class="category-pill__icon">☕</span> Cafés
-            </button>
-            <button class="category-pill" data-category="shop">
-              <span class="category-pill__icon">🛒</span> Shops
-            </button>
-            <button class="category-pill" data-category="gym">
-              <span class="category-pill__icon">💪</span> Gyms
-            </button>
-            <button class="category-pill" data-category="atm">
-              <span class="category-pill__icon">🏧</span> ATMs
-            </button>
-            <button class="category-pill" data-category="park">
-              <span class="category-pill__icon">🌳</span> Parks
-            </button>
-          </div>
-        </div>
-
-        <!-- Live OSM Toggle -->
-        <div class="category-section">
-          <div class="section-label">Data Source</div>
-          <label class="switch-row">
-            <div>
-              <div class="fw-semibold">Live OSM</div>
-              <div class="muted small">Fetch from OpenStreetMap</div>
-            </div>
-            <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="liveToggle">
-            </div>
-          </label>
-        </div>
-
+        
         <!-- Radius Controls (Hidden by default) -->
-        <div id="radiusControls" class="radius-control d-none">
-          <div class="radius-control__header">
-            <span class="section-label">Search Radius</span>
-            <span id="radiusValue" class="radius-control__value">1.0 km</span>
+        <div id="radiusControls" class="range-control d-none" style="margin-top: var(--space-3);">
+          <div class="range-control__header">
+            <span class="range-control__label">Pin Search Radius</span>
+            <span id="radiusValue" class="range-control__value">1.0 km</span>
           </div>
           <input 
             id="radiusKm" 
             type="range" 
-            class="radius-slider"
+            class="range-control__slider"
             min="0.2" 
             max="5" 
             step="0.1" 
             value="1.0"
           >
         </div>
+      </div>
 
-        <!-- Area Select -->
-        <div class="area-select-wrapper">
-          <div class="section-label">Area Filter</div>
-          <select id="areaSelect" class="area-select">
+      <!-- Categories Section -->
+      <div class="side-panel__section">
+        <div class="side-panel__section-title">Categories</div>
+        <div id="categoryChips" class="category-pills">
+          <button class="category-pill active" data-category="all">
+            <span class="category-pill__icon">✨</span> All
+          </button>
+          <button class="category-pill category-pill--cafe" data-category="cafe">
+            <span class="category-pill__icon">☕</span> Cafés
+          </button>
+          <button class="category-pill category-pill--shop" data-category="shop">
+            <span class="category-pill__icon">🛒</span> Shops
+          </button>
+          <button class="category-pill category-pill--gym" data-category="gym">
+            <span class="category-pill__icon">💪</span> Gyms
+          </button>
+          <button class="category-pill category-pill--atm" data-category="atm">
+            <span class="category-pill__icon">🏧</span> ATMs
+          </button>
+          <button class="category-pill category-pill--park" data-category="park">
+            <span class="category-pill__icon">🌳</span> Parks
+          </button>
+        </div>
+      </div>
+
+      <!-- Data Source Section -->
+      <div class="side-panel__section">
+        <div class="side-panel__section-title">Data Source</div>
+        <div class="toggle-control">
+          <div class="toggle-control__info">
+            <span class="toggle-control__label">Live OSM</span>
+            <span class="toggle-control__hint">Fetch from OpenStreetMap</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" class="toggle-switch__input" id="liveToggle">
+            <span class="toggle-switch__slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Area Filter Section -->
+      <div class="side-panel__section">
+        <div class="select-control">
+          <label class="select-control__label" for="areaSelect">Area Filter</label>
+          <select id="areaSelect" class="select-control__select">
             <option value="">All areas</option>
           </select>
         </div>
+      </div>
 
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-          <div class="btn-row">
-            <button id="resetView" class="btn btn-secondary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                <path d="M3 3v5h5"/>
-              </svg>
-              Reset
-            </button>
-            <button id="btnClearAll" class="btn btn-secondary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6 6 18M6 6l12 12"/>
-              </svg>
-              Clear All
-            </button>
-          </div>
+      <!-- Actions Section -->
+      <div class="side-panel__section">
+        <div style="display: flex; gap: var(--space-2);">
+          <button id="resetView" class="btn btn-secondary" style="flex: 1;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+            Reset
+          </button>
+          <button id="btnClearAll" class="btn btn-secondary" style="flex: 1;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+            Clear
+          </button>
         </div>
       </div>
-    </div>
 
-    <!-- Results Panel -->
-    <div class="glass-panel results-panel">
-      <div class="results-panel__header">
-        <h3 class="results-panel__title">Results</h3>
-        <div id="resultSummary" class="results-panel__count">Tap the map to explore</div>
-      </div>
-      <div id="resultsList" class="results-panel__list">
-        <div class="empty-state" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 16px; opacity: 0.5;">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-            <circle cx="12" cy="10" r="3"/>
-          </svg>
-          <p style="margin: 0;">Tap anywhere on the map<br>to discover nearby places</p>
+      <!-- Results Section -->
+      <div class="side-panel__section" style="flex: 1; display: flex; flex-direction: column; min-height: 200px;">
+        <div class="results-panel__header">
+          <h3 class="results-panel__title">Results</h3>
+          <span id="resultSummary" class="results-panel__count">Tap the map to explore</span>
+        </div>
+        <div id="resultsList" class="results-panel__list" style="flex: 1; overflow-y: auto;">
+          <div class="results-empty">
+            <svg class="results-empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            <div class="results-empty__title">Get Started</div>
+            <p class="results-empty__text">Tap the map to find nearby places or drop a pin to search within a radius</p>
+          </div>
         </div>
       </div>
     </div>
@@ -243,17 +256,25 @@
 
   <!-- Map Legend -->
   <div class="map-legend" id="mapLegend">
-    <div class="legend-item">
-      <span class="legend-dot legend-dot--amenity"></span>
-      Amenities
+    <div class="map-legend__item">
+      <span class="map-legend__dot map-legend__dot--cafe"></span>
+      Cafés
     </div>
-    <div class="legend-item">
-      <span class="legend-dot legend-dot--route"></span>
-      Routes
+    <div class="map-legend__item">
+      <span class="map-legend__dot map-legend__dot--gym"></span>
+      Gyms
     </div>
-    <div class="legend-item">
-      <span class="legend-dot legend-dot--area"></span>
-      Areas
+    <div class="map-legend__item">
+      <span class="map-legend__dot map-legend__dot--park"></span>
+      Parks
+    </div>
+    <div class="map-legend__item">
+      <span class="map-legend__dot map-legend__dot--atm"></span>
+      ATMs
+    </div>
+    <div class="map-legend__item">
+      <span class="map-legend__dot map-legend__dot--shop"></span>
+      Shops
     </div>
   </div>
 
@@ -931,9 +952,9 @@ window.addEventListener("DOMContentLoaded", function() {
           <div class="result-card" data-id="${id}">
             <span class="result-card__index">${i + 1}</span>
             <div class="result-card__content">
-              <div class="result-card__title">${props.name || "Unnamed"}</div>
+              <div class="result-card__name">${props.name || "Unnamed"}</div>
               <div class="result-card__meta">
-                <span class="result-card__badge">${props.category || "place"}</span>
+                <span class="result-card__category">${props.category || "place"}</span>
                 ${distance ? `<span class="result-card__distance">${distance}</span>` : ""}
               </div>
             </div>
@@ -1016,13 +1037,22 @@ window.addEventListener("DOMContentLoaded", function() {
 
         if (state.useLiveOSM && !forceLocal && typeof LiveOSM !== "undefined") {
           const categories = getSelectedCategories();
-          features = await LiveOSM.fetchNearby(latlng.lat, latlng.lng, km * 1000, categories);
+          features = await LiveOSM.fetchAmenities(latlng.lat, latlng.lng, km, categories);
           setStatus(`Found ${features.length} places via OSM`, "success");
         } else {
-          const url = new URL("/api/amenities/nearby", window.location.origin);
-          url.searchParams.set("lat", latlng.lat);
-          url.searchParams.set("lng", latlng.lng);
-          url.searchParams.set("radius_km", km);
+          // Use different endpoints based on mode
+          let url;
+          if (isRadius) {
+            url = new URL("/api/amenities/radius", window.location.origin);
+            url.searchParams.set("lat", latlng.lat);
+            url.searchParams.set("lng", latlng.lng);
+            url.searchParams.set("km", km);
+          } else {
+            url = new URL("/api/amenities/nearest", window.location.origin);
+            url.searchParams.set("lat", latlng.lat);
+            url.searchParams.set("lng", latlng.lng);
+            url.searchParams.set("limit", "50");
+          }
           if (state.areaId) url.searchParams.set("area_id", state.areaId);
           
           const fc = await fetch(url).then(handleResponse);
@@ -1034,8 +1064,9 @@ window.addEventListener("DOMContentLoaded", function() {
         renderResults(filtered);
 
         const labelText = label || `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
-        resultSummary.textContent = `${filtered.length} places near ${labelText}`;
-        setStatus(`Found ${filtered.length} places`, "success");
+        const areaText = state.areaId ? " in selected area" : "";
+        resultSummary.textContent = `${filtered.length} places near ${labelText}${areaText}`;
+        setStatus(`Found ${filtered.length} places${areaText}`, "success");
 
         // Expand sheet to show results
         SheetController.expandForResults();
@@ -1060,8 +1091,9 @@ window.addEventListener("DOMContentLoaded", function() {
         
         syncAmenityLayer(filtered);
         renderResults(filtered);
-        resultSummary.textContent = `${filtered.length} places in selected area`;
-        setStatus(`Found ${filtered.length} places in area`, "success");
+        const areaName = areaSelect.options[areaSelect.selectedIndex]?.text || "selected area";
+        resultSummary.textContent = `${filtered.length} places in ${areaName}`;
+        setStatus(`Found ${filtered.length} places in ${areaName}`, "success");
         
         SheetController.expandForResults();
       } catch (err) {
@@ -1118,7 +1150,8 @@ window.addEventListener("DOMContentLoaded", function() {
       state.mode = newMode;
       radiusSection.classList.toggle("d-none", newMode !== "radius");
       map.getContainer().style.cursor = newMode === "radius" ? "crosshair" : "";
-      setStatus(newMode === "nearest" ? "Tap the map to find nearby places" : "Tap the map to search within radius", "info");
+      const areaNote = state.areaId ? " (within selected area)" : "";
+      setStatus(newMode === "nearest" ? "Tap the map to find nearby places" : `Drop a pin to search within radius${areaNote}`, "info");
       if (newMode !== "radius") clearRadiusOverlay();
       replayActiveSearch();
     }
@@ -1174,7 +1207,7 @@ window.addEventListener("DOMContentLoaded", function() {
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
             <circle cx="12" cy="10" r="3"/>
           </svg>
-          <p style="margin: 0;">Tap anywhere on the map<br>to discover nearby places</p>
+          <p style="margin: 0;">Tap the map to find places<br>Use ${state.mode === 'radius' ? 'Drop a Pin' : 'Nearby'} mode above</p>
         </div>`;
       resultSummary.textContent = "Tap the map to explore";
       setStatus("View reset", "info");
