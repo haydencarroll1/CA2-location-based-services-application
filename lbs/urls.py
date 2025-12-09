@@ -21,7 +21,6 @@ urlpatterns = [
     path("api/", include(router.urls)),
     path("api/amenities/nearest", NearestAmenities.as_view()),
     path("api/amenities/within", AmenitiesWithinArea.as_view()),
-    path("api/amenities/in-area", AmenitiesWithinArea.as_view()),
     path("api/amenities/radius", AmenitiesWithinRadius.as_view()),
     path("api/routes/intersecting", RoutesIntersectingArea.as_view()),
     path("api/routes/radius", RoutesWithinRadius.as_view()),

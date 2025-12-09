@@ -1,16 +1,7 @@
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
-from django.views.generic import CreateView, TemplateView
+from django.views.generic import TemplateView
 
 from .models import Favorite
-
-
-class SignupView(CreateView):
-    form_class = UserCreationForm
-    template_name = "registration/signup.html"
-    # redirect to allauth login
-    success_url = reverse_lazy("account_login")
 
 
 class ProfileView(LoginRequiredMixin, TemplateView):
