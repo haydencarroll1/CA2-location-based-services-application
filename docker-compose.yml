@@ -5,7 +5,7 @@ networks:
       config:
         - subnet: 172.29.0.0/16
 # could just use default bridge network, but specifying subnet to have static IPs for services
-  
+
 
 services:
   db:
@@ -94,30 +94,30 @@ services:
       retries: 3
     restart: unless-stopped
 
-  pgadmin:
-    image: dpage/pgadmin4:8.6
-    container_name: lbs_pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
-      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False"
-      PGADMIN_CONFIG_COOKIE_DEFAULT_SECURE: "False"
-      PGADMIN_CONFIG_COOKIE_SAMESITE: "'Lax'"
-      PGADMIN_CONFIG_PROXY_X_FOR_COUNT: 1
-      PGADMIN_CONFIG_PROXY_X_PROTO_COUNT: 1
-      PGADMIN_CONFIG_PROXY_X_HOST_COUNT: 1
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-    networks:
-      dae_net:
-        ipv4_address: 172.29.0.5
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
+#  pgadmin:
+#    image: dpage/pgadmin4:8.6
+#    container_name: lbs_pgadmin
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+#      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+#      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False"
+#      PGADMIN_CONFIG_COOKIE_DEFAULT_SECURE: "False"
+#      PGADMIN_CONFIG_COOKIE_SAMESITE: "'Lax'"
+#      PGADMIN_CONFIG_PROXY_X_FOR_COUNT: 1
+#      PGADMIN_CONFIG_PROXY_X_PROTO_COUNT: 1
+#      PGADMIN_CONFIG_PROXY_X_HOST_COUNT: 1
+#      PGADMIN_CONFIG_SERVER_MODE: "False"
+ #   networks:
+#      dae_net:
+#        ipv4_address: 172.29.0.5
+#    ports:
+#      - "5050:80"
+#    volumes:
+#      - pgadmin_data:/var/lib/pgadmin
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#    restart: unless-stopped
 
 volumes:
   db_data:
