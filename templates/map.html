@@ -1431,6 +1431,50 @@ window.addEventListener("DOMContentLoaded", function() {
       });
     });
 
+    // Search amenities from API
+    async function searchAmenities(query) {
+      if (!query || query.length < 2) {
+        setStatus("Type at least 2 characters to search", "info");
+        return;
+      }
+      
+      setLoading(true);
+      try {
+        const url = new URL("/api/amenities/search", window.location.origin);
+        url.searchParams.set("q", query);
+        if (state.selectedCategories.size === 1) {
+          url.searchParams.set("category", Array.from(state.selectedCategories)[0]);
+        }
+        
+        const fc = await fetch(url).then(handleResponse);
+        const features = fc.features || [];
+        
+        // Store for re-filtering
+        state.lastFeatures = features;
+        
+        syncAmenityLayer(features);
+        renderResults(features);
+        
+        resultSummary.textContent = `${features.length} results for "${query}"`;
+        setStatus(`Found ${features.length} places matching "${query}"`, "success");
+        
+        // Fit map to results if we have any
+        if (features.length > 0) {
+          const bounds = amenitiesLayer.getBounds();
+          if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+          }
+        }
+        
+        SheetController.expandForResults();
+      } catch (err) {
+        console.error("Search error:", err);
+        setStatus(err.message || "Search failed", "danger");
+      } finally {
+        setLoading(false);
+      }
+    }
+
     // Search input
     searchInputs.forEach(input => {
       input.addEventListener("input", () => {
@@ -1441,9 +1485,25 @@ window.addEventListener("DOMContentLoaded", function() {
           searchInputs.forEach(other => {
             if (other !== input) other.value = input.value;
           });
-          // Re-filter existing results instead of re-fetching
-          refilterResults();
-        }, 200);
+          
+          // If we have loaded results, filter them; otherwise search API
+          if (state.lastFeatures.length > 0) {
+            refilterResults();
+          } else if (value.length >= 2) {
+            searchAmenities(value);
+          }
+        }, 300);
+      });
+      
+      // Also search on Enter key
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const value = input.value.trim().toLowerCase();
+          if (value.length >= 2) {
+            searchAmenities(value);
+          }
+        }
       });
     });
 

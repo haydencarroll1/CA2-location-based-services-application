@@ -2838,11 +2838,23 @@ code, pre {
   align-items: flex-start;
   justify-content: center;
   padding: var(--space-8) var(--space-4);
+  padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom, 20px));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--color-base-900);
   background-image: 
     radial-gradient(ellipse at 30% 20%, rgba(var(--accent-primary-rgb), 0.08) 0%, transparent 50%),
     radial-gradient(ellipse at 70% 80%, rgba(var(--accent-secondary-rgb), 0.06) 0%, transparent 50%);
+}
+
+/* Enable body scrolling when auth-page is present */
+body:has(.auth-page) {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+html:has(.auth-page) {
+  overflow-y: auto;
 }
 
 @media (min-height: 700px) {
@@ -3132,7 +3144,20 @@ code, pre {
   min-height: 100vh;
   min-height: 100dvh;
   padding: calc(var(--header-height) + var(--safe-area-top) + var(--space-8)) var(--space-4) var(--space-8);
+  padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom, 20px));
   background: var(--color-base-900);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Enable body scrolling when profile-page is present */
+body:has(.profile-page) {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+html:has(.profile-page) {
+  overflow-y: auto;
 }
 
 .profile-container {

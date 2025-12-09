@@ -165,3 +165,38 @@ class RoutesWithinRadius(APIView):
         qs = Route.objects.filter(path__distance_lte=(origin, D(km=km)))
         serializer = RouteGeoSerializer(qs, many=True)
         return Response(serializer.data)
+
+
+class SearchAmenities(APIView):
+    """Search amenities by name, operator, cuisine, or address"""
+    permission_classes = [AllowAny]
+    def get(self, request):
+        query = request.query_params.get("q", "").strip()
+        if not query or len(query) < 2:
+            raise ValidationError("Query param 'q' must be at least 2 characters.")
+        
+        # optional category filter
+        category = request.query_params.get("category")
+        
+        # limit results
+        limit_param = request.query_params.get("limit", "50")
+        try:
+            limit = min(int(limit_param), 100)
+        except (TypeError, ValueError):
+            limit = 50
+        
+        # search across multiple fields using icontains
+        from django.db.models import Q
+        qs = Amenity.objects.filter(
+            Q(name__icontains=query) |
+            Q(operator__icontains=query) |
+            Q(cuisine__icontains=query) |
+            Q(addr_street__icontains=query)
+        )
+        
+        if category:
+            qs = qs.filter(category=category)
+        
+        qs = qs[:limit]
+        serializer = AmenityGeoSerializer(qs, many=True)
+        return Response(serializer.data)
