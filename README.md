@@ -44,7 +44,7 @@ An interactive map application for exploring amenities and walking routes around
 | **Database** | PostgreSQL 16 + PostGIS 3.5 |
 | **Deployment** | Docker Compose, Nginx, Gunicorn |
 | **Auth** | django-allauth (Google OAuth) |
-| **APIs** | OSRM (routing), Open-Meteo (weather), Overpass (OSM data import) |
+| **APIs** | OSRM (routing), Open-Meteo (weather), Overpass (offline OSM import) |
 
 ---
 
@@ -63,6 +63,8 @@ The app runs 4 containers on a custom bridge network (`172.29.0.0/16`):
 
 ### Nginx Configuration
 
+Nginx handles reverse proxying and static file serving. In production, **TLS is terminated at the Azure load balancer** before reaching nginx, so nginx listens on port 80 internally while the public endpoint is HTTPS on 443.
+
 ```nginx
 upstream web {
     server web:8000;
@@ -72,19 +74,22 @@ server {
     listen 80;
     client_max_body_size 10M;
     
-    # Security headers
+    # Security headers (HSTS tells browsers to always use HTTPS)
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
     add_header X-Content-Type-Options "nosniff";
     add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
     
-    # Gzip compression for performance
+    # Gzip compression
     gzip on;
     gzip_types text/plain text/css application/javascript application/json;
     
-    # Static files with 30 day cache
+    # Static files with 30 day cache (served by nginx, not Django)
     location /static/ {
         alias /app/staticfiles/;
         expires 30d;
+        add_header Cache-Control "public, immutable";
     }
     
     # Proxy to Django
@@ -144,7 +149,9 @@ gunicorn --bind 0.0.0.0:8000 \
 
 The app is hosted on an **Azure Virtual Machine** running Ubuntu:
 
-🌐 **Live URL:** [https://dae-ca2.francecentral.cloudapp.azure.com](http://dae-ca2.francecentral.cloudapp.azure.com)
+🌐 **Live URL:** [https://dae-ca2.francecentral.cloudapp.azure.com](https://dae-ca2.francecentral.cloudapp.azure.com)
+
+🔧 **Dev/Testing:** `http://dae-ca2.francecentral.cloudapp.azure.com:8080` (HTTP only, for debugging)
 
 ### Server Details
 
@@ -162,7 +169,11 @@ The app is hosted on an **Azure Virtual Machine** running Ubuntu:
 2. Cloned the repo to the server
 3. Configured `.env` with production settings
 4. Ran `docker compose up -d` to start all containers
-5. Opened port 8080 in Azure Network Security Group
+5. Opened ports in Azure Network Security Group:
+   - **443** - HTTPS (production traffic)
+   - **80** - HTTP (redirects to HTTPS)
+   - **8080** - Development/testing endpoint
+   - **22** - SSH access
 
 ### Production Configuration
 
@@ -234,7 +245,7 @@ python manage.py runserver
 | `/api/amenities/search?q=starbucks` | GET | Search by name |
 | `/api/areas/` | GET | Dublin admin areas |
 | `/api/routes/` | GET | Walking routes |
-| `/api/favourites/` | GET/POST/DELETE | User favourites (auth required) |
+| `/api/favourites/` | GET/POST/DELETE | User favourites (requires Google OAuth login) |
 
 ---
 
