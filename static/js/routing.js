@@ -1,3 +1,8 @@
+/*
+ * routing.js - Handles route calculations using OSRM
+ * Uses the free public OSRM demo server for routing
+ */
+
 const RoutingModule = (function() {
   'use strict';
 

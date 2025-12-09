@@ -1,16 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-<!-- 
-  DUBLIN AMENITIES EXPLORER - POLISHED VERSION
-  Features:
-  - Google Maps-style bottom sheet with swipe gestures
-  - Three sheet states: peek, half, full
-  - Click map to minimize sheet
-  - Fixed weather widget z-index
-  - Improved location handling
-  - Smooth animations
--->
+<!-- Main map page for Dublin Amenities Explorer -->
 
 <div class="app-container">
   <!-- Full-Screen Map -->
@@ -300,9 +291,10 @@ window.addEventListener("DOMContentLoaded", function() {
       return;
     }
 
-    // =========================================================================
-    // BOTTOM SHEET CONTROLLER - Google Maps style
-    // =========================================================================
+
+
+
+
     const SheetController = {
       el: document.querySelector(".side-panel"),
       handle: document.getElementById("sheetHandle"),
@@ -439,7 +431,8 @@ window.addEventListener("DOMContentLoaded", function() {
       }
     };
 
-    // MAP INITIALIZATION
+
+
     const map = L.map("map", {
       scrollWheelZoom: true,
       zoomControl: false,
@@ -524,9 +517,10 @@ window.addEventListener("DOMContentLoaded", function() {
       }
     });
 
-    // =========================================================================
-    // HEATMAP LAYER
-    // =========================================================================
+
+
+
+
     let heatmapLayer = null;
     let isHeatmapActive = false;
 
@@ -586,9 +580,10 @@ window.addEventListener("DOMContentLoaded", function() {
       }
     });
 
-    // =========================================================================
-    // DOM REFERENCES
-    // =========================================================================
+
+
+
+
     const searchInputs = document.querySelectorAll("[data-role='search-input']");
     const radiusSection = document.getElementById("radiusControls");
     const radiusInput = document.getElementById("radiusKm");
@@ -608,9 +603,10 @@ window.addEventListener("DOMContentLoaded", function() {
     const sidePanelEl = document.querySelector(".side-panel");
     const locationBanner = document.getElementById("locationBanner");
 
-    // =========================================================================
-    // STATE
-    // =========================================================================
+
+
+
+
     const state = {
       mode: "nearest",
       selectedCategories: new Set(),
@@ -625,9 +621,10 @@ window.addEventListener("DOMContentLoaded", function() {
     let searchDebounce = null;
     let statusTimeout = null;
 
-    // =========================================================================
-    // ICON HANDLING
-    // =========================================================================
+
+
+
+
     const amenityIconCache = new Map();
     const amenityIconSlugs = new Set(["cafe", "shop", "gym", "atm", "park", "default"]);
     
@@ -663,9 +660,10 @@ window.addEventListener("DOMContentLoaded", function() {
       iconAnchor: [9, 9],
     });
 
-    // =========================================================================
-    // MARKERS AND LAYERS
-    // =========================================================================
+
+
+
+
     let userMarker = null;
     let userAccuracyCircle = null;
     let radiusMarker = null;
@@ -795,9 +793,10 @@ window.addEventListener("DOMContentLoaded", function() {
       }
     }).addTo(map);
 
-    // =========================================================================
-    // UI FUNCTIONS
-    // =========================================================================
+
+
+
+
     function setLoading(isLoading) {
       loadingOverlay.classList.toggle("active", isLoading);
     }
@@ -828,9 +827,10 @@ window.addEventListener("DOMContentLoaded", function() {
       return res.json();
     }
 
-    // =========================================================================
-    // FAVORITES
-    // =========================================================================
+
+
+
+
     function refreshFavoriteButtons() {
       document.querySelectorAll(".favorite-btn").forEach(btn => {
         const id = btn.dataset.id;
@@ -920,9 +920,10 @@ window.addEventListener("DOMContentLoaded", function() {
         .catch(() => setStatus("Could not calculate route", "danger"));
     };
 
-    // =========================================================================
-    // LOCATION HANDLING - IMPROVED
-    // =========================================================================
+
+
+
+
     function showLocationBanner() {
       if (locationBanner && !state.locationAsked) {
         locationBanner.classList.remove("d-none");
@@ -1061,9 +1062,10 @@ window.addEventListener("DOMContentLoaded", function() {
       );
     }
 
-    // =========================================================================
-    // UI HELPERS
-    // =========================================================================
+
+
+
+
     function updateRangeLabels() {
       radiusValueLabel.textContent = `${parseFloat(radiusInput.value).toFixed(1)} km`;
     }
@@ -1202,9 +1204,10 @@ window.addEventListener("DOMContentLoaded", function() {
       });
     }
 
-    // =========================================================================
-    // RADIUS OVERLAY
-    // =========================================================================
+
+
+
+
     function updateRadiusOverlay(latlng, km) {
       const radiusM = km * 1000;
       if (!radiusMarker) {
@@ -1233,9 +1236,10 @@ window.addEventListener("DOMContentLoaded", function() {
       return state.selectedCategories.size === 0 ? [] : Array.from(state.selectedCategories);
     }
 
-    // =========================================================================
-    // FETCH AMENITIES
-    // =========================================================================
+
+
+
+
     async function fetchAmenities(latlng, label, remember = true) {
       const isRadius = state.mode === "radius";
       const km = isRadius ? parseFloat(radiusInput.value) : 1;
@@ -1392,9 +1396,10 @@ window.addEventListener("DOMContentLoaded", function() {
       }
     }
 
-    // =========================================================================
-    // EVENT LISTENERS
-    // =========================================================================
+
+
+
+
     
     // MAP CLICK - Only triggers search in "Drop a Pin" (radius) mode
     map.on("click", e => {
@@ -1609,9 +1614,10 @@ window.addEventListener("DOMContentLoaded", function() {
       if (state.mode === "radius") replayActiveSearch();
     });
 
-    // =========================================================================
-    // INITIALIZATION
-    // =========================================================================
+
+
+
+
     if (isAuthenticated) loadFavorites();
     updateCategoryChipsUI();
     fetchAreas(true);

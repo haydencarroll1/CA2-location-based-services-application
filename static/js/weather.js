@@ -1,7 +1,11 @@
+/*
+ * weather.js - Weather widget using Open-Meteo API
+ * Shows current weather conditions on the map
+ */
+
 const WeatherModule = (function() {
   'use strict';
 
-  // Open-Meteo API (free, no key needed!)
   const API_BASE = 'https://api.open-meteo.com/v1/forecast';
   
   // Weather code to icon/description mapping
