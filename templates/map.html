@@ -169,21 +169,6 @@
         </div>
       </div>
 
-      <!-- Data Source Section -->
-      <div class="side-panel__section">
-        <div class="side-panel__section-title">Data Source</div>
-        <div class="toggle-control">
-          <div class="toggle-control__info">
-            <span class="toggle-control__label">Live OSM</span>
-            <span class="toggle-control__hint">Fetch from OpenStreetMap</span>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" class="toggle-switch__input" id="liveToggle">
-            <span class="toggle-switch__slider"></span>
-          </label>
-        </div>
-      </div>
-
       <!-- Area Filter Section -->
       <div class="side-panel__section">
         <div class="select-control">
@@ -250,6 +235,15 @@
         <circle cx="12" cy="12" r="10"/>
         <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
         <path d="M2 12h20"/>
+      </svg>
+    </button>
+    <button class="map-control-btn" id="themeToggle" title="Toggle light/dark mode">
+      <svg class="theme-icon theme-icon--sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="5"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+      <svg class="theme-icon theme-icon--moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
       </svg>
     </button>
   </div>
@@ -450,14 +444,45 @@ window.addEventListener("DOMContentLoaded", function() {
     const darkTiles = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 19,
-    }).addTo(map);
+    });
+
+    const lightTiles = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      maxZoom: 19,
+    });
 
     const satelliteTiles = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
       attribution: '&copy; Esri',
       maxZoom: 19,
     });
 
+    let currentBaseLayer = null;
     let isSatellite = false;
+
+    function applyBaseLayerForTheme(theme) {
+      const effectiveTheme = theme || document.documentElement.dataset.theme || "dark";
+      const desiredBase = effectiveTheme === "light" ? lightTiles : darkTiles;
+
+      if (currentBaseLayer === desiredBase) return;
+
+      if (!isSatellite && currentBaseLayer && map.hasLayer(currentBaseLayer)) {
+        map.removeLayer(currentBaseLayer);
+      }
+
+      currentBaseLayer = desiredBase;
+
+      if (!isSatellite && !map.hasLayer(currentBaseLayer)) {
+        currentBaseLayer.addTo(map);
+      }
+    }
+
+    // Initialize base layer using current theme
+    applyBaseLayerForTheme(document.documentElement.dataset.theme);
+
+    // Expose hook so global theme toggle can sync the map base layer
+    window.updateMapTheme = function(theme) {
+      applyBaseLayerForTheme(theme);
+    };
 
     // Initialize feature modules
     if (typeof RoutingModule !== "undefined") RoutingModule.init(map);
@@ -467,18 +492,31 @@ window.addEventListener("DOMContentLoaded", function() {
     SheetController.init();
 
     // Custom zoom controls
+    const mapElement = document.getElementById("map");
     document.getElementById("zoomIn").addEventListener("click", () => map.zoomIn());
     document.getElementById("zoomOut").addEventListener("click", () => map.zoomOut());
     document.getElementById("toggleSatellite").addEventListener("click", () => {
       if (isSatellite) {
         map.removeLayer(satelliteTiles);
-        map.addLayer(darkTiles);
+        if (currentBaseLayer && !map.hasLayer(currentBaseLayer)) {
+          currentBaseLayer.addTo(map);
+        }
       } else {
-        map.removeLayer(darkTiles);
-        map.addLayer(satelliteTiles);
+        if (currentBaseLayer && map.hasLayer(currentBaseLayer)) {
+          map.removeLayer(currentBaseLayer);
+        }
+        if (!map.hasLayer(satelliteTiles)) {
+          satelliteTiles.addTo(map);
+        }
       }
       isSatellite = !isSatellite;
-      document.getElementById("toggleSatellite").classList.toggle("active", isSatellite);
+      const toggleBtn = document.getElementById("toggleSatellite");
+      if (toggleBtn) {
+        toggleBtn.classList.toggle("active", isSatellite);
+      }
+      if (mapElement) {
+        mapElement.classList.toggle("map--satellite", isSatellite);
+      }
     });
 
     // =========================================================================
@@ -497,7 +535,7 @@ window.addEventListener("DOMContentLoaded", function() {
     const locateButtons = document.querySelectorAll("[data-role='locate-button']");
     const modeButtons = document.querySelectorAll(".mode-toggle__btn");
     const categoryChips = document.querySelectorAll(".category-pill");
-    const liveToggle = document.getElementById("liveToggle");
+    // Live OSM is always enabled
     const liveIndicator = document.getElementById("liveIndicator");
     const filtersToggle = document.getElementById("filtersToggle");
     const sidePanelEl = document.querySelector(".side-panel");
@@ -513,7 +551,6 @@ window.addEventListener("DOMContentLoaded", function() {
       userLocation: null,
       lastOrigin: { nearest: null, radius: null },
       areaId: null,
-      useLiveOSM: false,
       locationAsked: false,
       lastFeatures: [], // Store raw features for re-filtering
     };
@@ -575,30 +612,82 @@ window.addEventListener("DOMContentLoaded", function() {
       const props = feature.properties || {};
       const name = props.name || "Unnamed";
       const category = props.category || "place";
-      const address = props.addr_street || "";
       const coords = feature.geometry?.coordinates || [];
       const lat = coords[1];
       const lng = coords[0];
       const canRoute = Number.isFinite(lat) && Number.isFinite(lng);
       const amenityId = feature.id || props.pk || props.id;
+      const distanceM = props.distance_m;
+      
+      // Get category icon and color
+      const categoryIcons = {
+        cafe: { icon: '☕', color: '#f59e0b' },
+        shop: { icon: '🛒', color: '#0ea5e9' },
+        gym: { icon: '💪', color: '#ef4444' },
+        atm: { icon: '🏧', color: '#3b82f6' },
+        park: { icon: '🌳', color: '#22c55e' }
+      };
+      const catInfo = categoryIcons[category] || { icon: '📍', color: '#0ea5e9' };
+      
+      // Format distance
+      let distanceText = '';
+      if (distanceM) {
+        distanceText = distanceM < 1000 
+          ? `${Math.round(distanceM)}m away`
+          : `${(distanceM / 1000).toFixed(1)}km away`;
+      }
+      
+      // Build info items (only show what's available)
+      const infoItems = [];
+      
+      if (props.addr_street) {
+        infoItems.push(`<div class="popup-info-row"><span class="popup-info-icon">📍</span><span>${props.addr_street}</span></div>`);
+      }
+      if (props.opening_hours) {
+        infoItems.push(`<div class="popup-info-row"><span class="popup-info-icon">🕐</span><span>${props.opening_hours}</span></div>`);
+      }
+      if (props.phone) {
+        infoItems.push(`<div class="popup-info-row"><span class="popup-info-icon">📞</span><a href="tel:${props.phone}" class="popup-link">${props.phone}</a></div>`);
+      }
+      if (props.website) {
+        const shortUrl = props.website.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+        infoItems.push(`<div class="popup-info-row"><span class="popup-info-icon">🌐</span><a href="${props.website}" target="_blank" class="popup-link">${shortUrl}</a></div>`);
+      }
+      if (props.cuisine) {
+        infoItems.push(`<div class="popup-info-row"><span class="popup-info-icon">🍽️</span><span>${props.cuisine}</span></div>`);
+      }
+      if (props.operator) {
+        infoItems.push(`<div class="popup-info-row"><span class="popup-info-icon">🏢</span><span>${props.operator}</span></div>`);
+      }
+      if (props.description) {
+        infoItems.push(`<div class="popup-info-row"><span class="popup-info-icon">📝</span><span>${props.description}</span></div>`);
+      }
 
+      const isFav = isAuthenticated && amenityId && favoriteIds.has(String(amenityId));
+      
       let html = `
-        <div style="min-width: 180px;">
-          <strong style="font-size: 14px; display: block; margin-bottom: 4px;">${name}</strong>
-          <span style="display: inline-block; padding: 2px 8px; background: rgba(139, 92, 246, 0.2); border-radius: 4px; font-size: 11px; text-transform: uppercase; margin-bottom: 6px;">${category}</span>
-          ${address ? `<p style="margin: 4px 0; font-size: 12px; color: #94a3b8;">${address}</p>` : ''}
+        <div class="popup-card">
+          <div class="popup-header">
+            <div class="popup-category" style="--cat-color: ${catInfo.color}">
+              <span class="popup-category__icon">${catInfo.icon}</span>
+              <span class="popup-category__text">${category}</span>
+            </div>
+            ${distanceText ? `<span class="popup-distance">${distanceText}</span>` : ''}
+          </div>
+          <h3 class="popup-title">${name}</h3>
+          ${infoItems.length > 0 ? `<div class="popup-info">${infoItems.slice(0, 4).join('')}</div>` : ''}
+          <div class="popup-actions">
+            ${canRoute ? `<button class="popup-action-btn popup-action-btn--primary" onclick="window.getDirectionsTo(${lat}, ${lng})">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+              Directions
+            </button>` : ''}
+            ${isAuthenticated && amenityId ? `<button class="popup-action-btn ${isFav ? 'popup-action-btn--saved' : ''}" onclick="window.toggleFavorite(${amenityId})">
+              ${isFav ? '★' : '☆'} ${isFav ? 'Saved' : 'Save'}
+            </button>` : ''}
+          </div>
+          ${props.source === 'OSM' ? '<div class="popup-source">Data from OpenStreetMap</div>' : ''}
+        </div>
       `;
-      
-      if (canRoute) {
-        html += `<button class="popup-route-btn" onclick="window.getDirectionsTo(${lat}, ${lng})">🧭 Get Directions</button>`;
-      }
-      
-      if (isAuthenticated && amenityId) {
-        const isFav = favoriteIds.has(String(amenityId));
-        html += `<button class="popup-route-btn" style="background: ${isFav ? 'linear-gradient(135deg, #fbbf24, #f59e0b)' : 'rgba(255,255,255,0.1)'};" onclick="window.toggleFavorite(${amenityId})">${isFav ? "★ Saved" : "☆ Save"}</button>`;
-      }
-      
-      html += '</div>';
       return html;
     }
 
@@ -630,10 +719,10 @@ window.addEventListener("DOMContentLoaded", function() {
 
     const areasLayer = L.geoJSON(null, {
       style: {
-        color: "#8b5cf6",
+        color: "#0ea5e9",
         weight: 2,
         opacity: 0.6,
-        fillColor: "#8b5cf6",
+        fillColor: "#0ea5e9",
         fillOpacity: 0.1,
         dashArray: "8, 4"
       }
@@ -920,10 +1009,37 @@ window.addEventListener("DOMContentLoaded", function() {
       });
     }
 
-    function applyFilters(features) {
+    // Calculate distance between two points in km (Haversine formula)
+    function distanceKm(lat1, lng1, lat2, lng2) {
+      const R = 6371; // Earth's radius in km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    function applyFilters(features, origin = null, radiusKm = null) {
+      // Get the current search origin and radius for distance filtering
+      const searchOrigin = origin || state.lastOrigin[state.mode];
+      const km = radiusKm || (state.mode === "radius" ? parseFloat(radiusInput.value) : null);
+      
       return features.filter(f => {
         const props = f.properties || {};
+        const coords = f.geometry?.coordinates;
+        
+        // Distance filter - ensure results are within the selected radius
+        if (km && searchOrigin && coords) {
+          const dist = distanceKm(searchOrigin.lat, searchOrigin.lng, coords[1], coords[0]);
+          if (dist > km) return false;
+        }
+        
+        // Category filter
         if (state.selectedCategories.size > 0 && !state.selectedCategories.has(props.category)) return false;
+        
+        // Search term filter
         if (state.searchTerm) {
           const searchable = [props.name, props.operator, props.cuisine, props.addr_street]
             .filter(Boolean).join(" ").toLowerCase();
@@ -981,18 +1097,19 @@ window.addEventListener("DOMContentLoaded", function() {
       resultsList.innerHTML = features.map((f, i) => {
         const props = f.properties || {};
         const id = f.id || props.pk || props.id;
+        const category = props.category || "place";
         const distance = props.distance_m ? `${(props.distance_m / 1000).toFixed(2)} km` : "";
         return `
-          <div class="result-card" data-id="${id}">
-            <span class="result-card__index">${i + 1}</span>
+          <div class="result-card" data-id="${id}" data-category="${category}">
+            <span class="result-card__index"></span>
             <div class="result-card__content">
               <div class="result-card__name">${props.name || "Unnamed"}</div>
               <div class="result-card__meta">
-                <span class="result-card__category">${props.category || "place"}</span>
+                <span class="result-card__category">${category}</span>
                 ${distance ? `<span class="result-card__distance">${distance}</span>` : ""}
               </div>
             </div>
-            ${isAuthenticated && id ? `<button class="favorite-btn ${favoriteIds.has(String(id)) ? 'favorite-btn--active' : ''}" data-id="${id}">${favoriteIds.has(String(id)) ? "★ Saved" : "☆ Save"}</button>` : ""}
+            ${isAuthenticated && id ? `<button class="favorite-btn ${favoriteIds.has(String(id)) ? 'favorite-btn--active' : ''}" data-id="${id}">${favoriteIds.has(String(id)) ? "★" : "☆"}</button>` : ""}
           </div>`;
       }).join("");
 
@@ -1052,7 +1169,7 @@ window.addEventListener("DOMContentLoaded", function() {
     // =========================================================================
     // FETCH AMENITIES
     // =========================================================================
-    async function fetchAmenities(latlng, label, remember = true, forceLocal = false) {
+    async function fetchAmenities(latlng, label, remember = true) {
       const isRadius = state.mode === "radius";
       const km = isRadius ? parseFloat(radiusInput.value) : 1;
       
@@ -1069,34 +1186,28 @@ window.addEventListener("DOMContentLoaded", function() {
       try {
         let features = [];
 
-        if (state.useLiveOSM && !forceLocal && typeof LiveOSM !== "undefined") {
-          // Fetch all categories, filtering happens locally via applyFilters()
-          features = await LiveOSM.fetchAmenities(latlng.lat, latlng.lng, km);
-          setStatus(`Found ${features.length} places via OSM`, "success");
+        // Fetch from PostGIS database (OSM data imported on startup)
+        let url;
+        if (isRadius) {
+          url = new URL("/api/amenities/radius", window.location.origin);
+          url.searchParams.set("lat", latlng.lat);
+          url.searchParams.set("lng", latlng.lng);
+          url.searchParams.set("km", km);
         } else {
-          // Use different endpoints based on mode
-          let url;
-          if (isRadius) {
-            url = new URL("/api/amenities/radius", window.location.origin);
-            url.searchParams.set("lat", latlng.lat);
-            url.searchParams.set("lng", latlng.lng);
-            url.searchParams.set("km", km);
-          } else {
-            url = new URL("/api/amenities/nearest", window.location.origin);
-            url.searchParams.set("lat", latlng.lat);
-            url.searchParams.set("lng", latlng.lng);
-            url.searchParams.set("limit", "50");
-          }
-          if (state.areaId) url.searchParams.set("area_id", state.areaId);
-          
-          const fc = await fetch(url).then(handleResponse);
-          features = fc.features || [];
+          url = new URL("/api/amenities/nearest", window.location.origin);
+          url.searchParams.set("lat", latlng.lat);
+          url.searchParams.set("lng", latlng.lng);
+          url.searchParams.set("limit", "50");
         }
+        if (state.areaId) url.searchParams.set("area_id", state.areaId);
+        
+        const fc = await fetch(url).then(handleResponse);
+        features = fc.features || [];
 
         // Store raw features for re-filtering
         state.lastFeatures = features;
         
-        const filtered = applyFilters(features);
+        const filtered = applyFilters(features, latlng, km);
         syncAmenityLayer(filtered);
         renderResults(filtered);
 
@@ -1336,15 +1447,8 @@ window.addEventListener("DOMContentLoaded", function() {
       });
     });
 
-    // Live OSM toggle
-    if (liveToggle) {
-      liveToggle.addEventListener("change", e => {
-        state.useLiveOSM = e.target.checked;
-        liveIndicator.style.display = state.useLiveOSM ? "flex" : "none";
-        setStatus(`Data source: ${state.useLiveOSM ? "Live OSM" : "Local DB"}`, "info");
-        replayActiveSearch();
-      });
-    }
+    // Using database - no live indicator needed
+    liveIndicator.style.display = "none";
 
     // Area select
     areaSelect.addEventListener("change", e => {

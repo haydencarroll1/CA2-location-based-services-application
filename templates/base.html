@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <!-- Mobile viewport: from Lecture 4 base template -->
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover, maximum-scale=5">
-  <meta name="theme-color" content="#0a0f1c">
+  <meta name="theme-color" content="#050505">
   <meta name="description" content="Explore Dublin's amenities with an interactive spatial map powered by PostGIS and GeoDjango">
   <!-- iOS standalone app settings -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%2306b6d4' rx='20' width='100' height='100'/><text x='50' y='68' text-anchor='middle' fill='white' font-size='45' font-weight='bold'>D</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230ea5e9' rx='20' width='100' height='100'/><text x='50' y='68' text-anchor='middle' fill='white' font-size='45' font-weight='bold'>D</text></svg>">
 </head>
 <body>
   <!-- Initial loading state -->
@@ -71,7 +71,6 @@
   <!-- Leaflet JS + feature modules -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-  <script src="{% static 'js/live_osm.js' %}"></script>
   <script src="{% static 'js/routing.js' %}"></script>
   <script src="{% static 'js/weather.js' %}"></script>
   
@@ -86,6 +85,65 @@
         }
       }, 100);
     });
+
+    (function() {
+      var root = document.documentElement;
+      var storedTheme = null;
+      try {
+        storedTheme = localStorage.getItem('theme');
+      } catch (e) {
+        storedTheme = null;
+      }
+
+      var prefersLight = false;
+      if (window.matchMedia) {
+        prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+      }
+
+      var metaTheme = document.querySelector('meta[name="theme-color"]');
+
+      function applyTheme(theme) {
+        root.dataset.theme = theme;
+        if (metaTheme) {
+          metaTheme.setAttribute('content', theme === 'light' ? '#f9fafb' : '#050505');
+        }
+        // Sync map base layer with theme if map is initialized
+        if (window.updateMapTheme) {
+          try {
+            window.updateMapTheme(theme);
+          } catch (e) {
+            // ignore
+          }
+        }
+        // Toggle icon visibility (works for both old and new class names)
+        var toggle = document.getElementById('themeToggle');
+        if (toggle) {
+          var sunIcon = toggle.querySelector('.theme-icon--sun, .theme-toggle__icon--sun');
+          var moonIcon = toggle.querySelector('.theme-icon--moon, .theme-toggle__icon--moon');
+          if (sunIcon && moonIcon) {
+            sunIcon.style.display = theme === 'light' ? 'none' : 'block';
+            moonIcon.style.display = theme === 'light' ? 'block' : 'none';
+          }
+        }
+      }
+
+      var initialTheme = storedTheme || (prefersLight ? 'light' : 'dark');
+      applyTheme(initialTheme);
+
+      window.addEventListener('DOMContentLoaded', function() {
+        var toggle = document.getElementById('themeToggle');
+        if (!toggle) return;
+        toggle.addEventListener('click', function() {
+          var newTheme = root.dataset.theme === 'light' ? 'dark' : 'light';
+          try {
+            localStorage.setItem('theme', newTheme);
+          } catch (e) {
+            // ignore
+          }
+          applyTheme(newTheme);
+        });
+      });
+    })();
   </script>
 </body>
 </html>

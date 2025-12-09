@@ -9,15 +9,12 @@ from .models import Favorite
 class SignupView(CreateView):
     form_class = UserCreationForm
     template_name = "registration/signup.html"
-    # If this view is used, redirect to allauth's login
+    # redirect to allauth login
     success_url = reverse_lazy("account_login")
 
 
 class ProfileView(LoginRequiredMixin, TemplateView):
-    """
-    Simple profile page where a signed-in user can see
-    their basic account details and saved favourites.
-    """
+    # shows user their saved favorites
 
     template_name = "profile.html"
 

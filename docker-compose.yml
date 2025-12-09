@@ -4,7 +4,7 @@ networks:
     ipam:
       config:
         - subnet: 172.29.0.0/16
-# could just use default bridge network, but specifying subnet to have static IPs for services
+# custom network with static ips
   
 
 services:
@@ -19,11 +19,11 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     volumes:
       - db_data:/var/lib/postgresql/data
-      # so data persists even if container is removed
+      # keeps data after restarts
     networks:
       dae_net:
         ipv4_address: 172.29.0.2
-        # fixed IP for ease of reference from other containers
+        # static ip
     ports:
       - "5432:5432"
     healthcheck:
@@ -31,14 +31,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      # checks if postgres is ready
+      # wait for db to start
     restart: unless-stopped
 
   web:
     build:
       context: .
       dockerfile: Dockerfile
-      # build web image from Dockerfile in current directory
+      # build from dockerfile
     container_name: lbs_web
 
     env_file:
@@ -70,6 +70,7 @@ services:
              python manage.py loaddata geo/fixtures/dcc_admin_areas.json &&
              python manage.py loaddata geo/fixtures/amenities_dublin.json &&
              python manage.py loaddata geo/fixtures/routes_sample.json &&
+             python manage.py import_osm_amenities &&
              python manage.py collectstatic --noinput --clear &&
              gunicorn --bind 0.0.0.0:8000 --workers 4 --worker-class sync --timeout 60 --forwarded-allow-ips='*' --access-logfile - --error-logfile - lbs.wsgi:application"
 

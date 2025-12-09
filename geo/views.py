@@ -10,7 +10,7 @@ from rest_framework.exceptions import ValidationError
 from .models import Amenity, Area, Route, Favorite
 from .serializers import AmenityGeoSerializer, AreaGeoSerializer, RouteGeoSerializer, FavoriteSerializer
 
-# ---- CRUD ----
+# basic crud stuff for the api
 class AmenityViewSet(viewsets.ModelViewSet):
     queryset = Amenity.objects.all()
     serializer_class = AmenityGeoSerializer
@@ -37,18 +37,18 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-# ---- Spatial queries ----
+# spatial query endpoints for map interactions
 class NearestAmenities(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
-        # grab lat lng from url params and convert to floats
+        # get lat/lng from url
         try:
             lat = float(request.query_params.get("lat"))
             lng = float(request.query_params.get("lng"))
         except (TypeError, ValueError):
             raise ValidationError("Query params 'lat' and 'lng' are required floats.")
 
-        # optional area filter
+        # can also filter by area if needed
         area = None
         area_id = request.query_params.get("area_id")
         if area_id:
@@ -57,7 +57,7 @@ class NearestAmenities(APIView):
             except Area.DoesNotExist:
                 raise ValidationError("Area not found.")
         
-        # get the limit param or default to 10 results
+        # how many results to return
         limit_param = request.query_params.get("limit", "10")
         try:
             limit = int(limit_param)
@@ -66,10 +66,10 @@ class NearestAmenities(APIView):
         if limit <= 0:
             raise ValidationError("Query param 'limit' must be greater than zero.")
         
-        # cap at 100 to avoid performance issues
+        # dont let them ask for too many or itll be slow
         limit = min(limit, 100)
         
-        # create point from coords and annotate each amenity with distance from that point
+        # make a point and use postgis to calc distances
         origin = Point(lng, lat, srid=4326)
         qs = Amenity.objects.all()
         if area:
@@ -82,18 +82,18 @@ class NearestAmenities(APIView):
 class AmenitiesWithinArea(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
-        # get the area id from params
+        # grab area id
         area_id = request.query_params.get("area_id")
         if not area_id:
             raise ValidationError("Query param 'area_id' is required.")
         
-        # fetch the area polygon from db
+        # get the area polygon
         try:
             area = Area.objects.get(pk=area_id)
         except Area.DoesNotExist:
             raise ValidationError("Area not found.")
         
-        # use postgis within lookup to find all amenities inside the polygon
+        # postgis within query - finds points inside polygon
         qs = Amenity.objects.filter(location__within=area.boundary)
         serializer = AmenityGeoSerializer(qs, many=True)
         return Response(serializer.data)
@@ -101,18 +101,18 @@ class AmenitiesWithinArea(APIView):
 class RoutesIntersectingArea(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
-        # get area id from query params
+        # get area from params
         area_id = request.query_params.get("area_id")
         if not area_id:
             raise ValidationError("Query param 'area_id' is required.")
         
-        # fetch the area polygon
+        # load area
         try:
             area = Area.objects.get(pk=area_id)
         except Area.DoesNotExist:
             raise ValidationError("Area not found.")
         
-        # find all routes that cross or touch the area boundary using postgis intersects
+        # postgis intersects - routes that cross area
         qs = Route.objects.filter(path__intersects=area.boundary)
         serializer = RouteGeoSerializer(qs, many=True)
         return Response(serializer.data)
@@ -120,7 +120,7 @@ class RoutesIntersectingArea(APIView):
 class AmenitiesWithinRadius(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
-        # parse lat lng and radius from params with km defaulting to 1
+        # get coords and radius, default 1km
         try:
             lat = float(request.query_params.get("lat"))
             lng = float(request.query_params.get("lng"))
@@ -131,7 +131,7 @@ class AmenitiesWithinRadius(APIView):
         if km <= 0:
             raise ValidationError("Param 'km' must be greater than zero.")
 
-        # optional area filter
+        # can also filter by area if needed
         area = None
         area_id = request.query_params.get("area_id")
         if area_id:
@@ -140,7 +140,7 @@ class AmenitiesWithinRadius(APIView):
             except Area.DoesNotExist:
                 raise ValidationError("Area not found.")
         
-        # create point and filter amenities within distance using postgis
+        # use postgis distance filter
         origin = Point(lng, lat, srid=4326)
         qs = Amenity.objects.all()
         if area:
@@ -152,7 +152,7 @@ class AmenitiesWithinRadius(APIView):
 class RoutesWithinRadius(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
-        # get center point and search radius from url params
+        # get lat/lng and km from params
         try:
             lat = float(request.query_params.get("lat"))
             lng = float(request.query_params.get("lng"))
@@ -160,7 +160,7 @@ class RoutesWithinRadius(APIView):
         except (TypeError, ValueError):
             raise ValidationError("Params 'lat','lng','km' are required floats.")
         
-        # find all routes within the specified distance from center point
+        # same as above but for routes
         origin = Point(lng, lat, srid=4326)
         qs = Route.objects.filter(path__distance_lte=(origin, D(km=km)))
         serializer = RouteGeoSerializer(qs, many=True)
