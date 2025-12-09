@@ -1,19 +1,15 @@
 const RoutingModule = (function() {
   'use strict';
 
-  // config
   const CONFIG = {
-    // using public osrm server
     OSRM_BASE_URL: 'https://router.project-osrm.org',
     
-    // transport modes
     PROFILES: {
       driving: 'driving',
       walking: 'foot',
       cycling: 'bike'
     },
     
-    // colors for each mode
     STYLES: {
       driving: { color: '#3b82f6', weight: 5, opacity: 0.8 },
       walking: { color: '#10b981', weight: 4, opacity: 0.8, dashArray: '10, 10' },
@@ -21,14 +17,12 @@ const RoutingModule = (function() {
     }
   };
 
-  // current route state
   let map = null;
   let routeLayer = null;
   let startMarker = null;
   let endMarker = null;
   let currentRoute = null;
 
-  // start and end markers
   const startIcon = L.divIcon({
     className: 'route-marker route-marker--start',
     html: `<div style="
@@ -68,8 +62,6 @@ const RoutingModule = (function() {
 
   async function getRoute(start, end, profile = 'walking') {
     const osrmProfile = CONFIG.PROFILES[profile] || CONFIG.PROFILES.walking;
-    
-    // osrm uses lng,lat not lat,lng
     const coords = `${start.lng},${start.lat};${end.lng},${end.lat}`;
     
     const url = `${CONFIG.OSRM_BASE_URL}/route/v1/${osrmProfile}/${coords}?overview=full&geometries=geojson&steps=true`;
@@ -97,33 +89,25 @@ const RoutingModule = (function() {
   }
 
   async function showRoute(start, end, profile = 'walking') {
-    // remove old route first
     clearRoute();
     
     try {
-      // fetch route
       const route = await getRoute(start, end, profile);
       currentRoute = route;
-      
-      // convert coords
       const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
       
-      // draw line on map
       const style = CONFIG.STYLES[profile] || CONFIG.STYLES.walking;
       const routeLine = L.polyline(coordinates, {
         ...style,
         className: 'route-line'
       }).addTo(routeLayer);
       
-      // add arrows to show direction
       addRouteArrows(coordinates, style.color);
       
-      // start marker
       startMarker = L.marker(start, { icon: startIcon })
         .bindPopup('<strong>Start</strong>')
         .addTo(routeLayer);
       
-      // end marker
       endMarker = L.marker(end, { icon: endIcon })
         .bindPopup(`
           <strong>Destination</strong><br>
@@ -131,10 +115,8 @@ const RoutingModule = (function() {
         `)
         .addTo(routeLayer);
       
-      // zoom to show whole route
       map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
       
-      // return info
       return {
         distance: route.distance,
         duration: route.duration,
@@ -150,14 +132,12 @@ const RoutingModule = (function() {
   }
 
   function addRouteArrows(coordinates, color) {
-    // put arrows along the route
     const step = Math.max(1, Math.floor(coordinates.length / 10));
     
     for (let i = step; i < coordinates.length - 1; i += step) {
       const current = coordinates[i];
       const next = coordinates[i + 1];
       
-      // work out which way to point arrow
       const angle = Math.atan2(next[0] - current[0], next[1] - current[1]) * 180 / Math.PI;
       
       const arrowIcon = L.divIcon({
@@ -183,7 +163,6 @@ const RoutingModule = (function() {
     currentRoute = null;
   }
 
-  // make distance look nice
   function formatDistance(meters) {
     if (meters < 1000) {
       return `${Math.round(meters)} m`;
@@ -191,7 +170,6 @@ const RoutingModule = (function() {
     return `${(meters / 1000).toFixed(1)} km`;
   }
 
-  // make time look nice
   function formatDuration(seconds) {
     if (seconds < 60) {
       return `${Math.round(seconds)} sec`;
@@ -204,7 +182,6 @@ const RoutingModule = (function() {
     return `${hours}h ${mins}m`;
   }
 
-  // get step by step directions
   function getDirections() {
     if (!currentRoute || !currentRoute.legs) return [];
     
@@ -229,19 +206,14 @@ const RoutingModule = (function() {
   };
 })();
 
-// setup routing
 function initRouting(map) {
   RoutingModule.init(map);
-  
-  // add ui
   addRoutingUI(map);
 }
 
 async function showRouteToAmenity(from, to, mode = 'walking') {
   try {
     const result = await RoutingModule.showRoute(from, to, mode);
-    
-    // show info box
     showRouteInfo(result);
     
     return result;
@@ -252,7 +224,6 @@ async function showRouteToAmenity(from, to, mode = 'walking') {
 }
 
 function addRoutingUI(map) {
-  // make control panel
   const routingPanel = L.control({ position: 'topright' });
   
   routingPanel.onAdd = function() {
@@ -331,7 +302,6 @@ function addRoutingUI(map) {
       </button>
     `;
     
-    // stop clicks from going through to map
     L.DomEvent.disableClickPropagation(div);
     
     return div;
@@ -339,7 +309,6 @@ function addRoutingUI(map) {
   
   routingPanel.addTo(map);
   
-  // mode buttons
   document.querySelectorAll('.routing-panel__mode').forEach(btn => {
     btn.addEventListener('click', (e) => {
       document.querySelectorAll('.routing-panel__mode').forEach(b => b.classList.remove('active'));
@@ -348,14 +317,12 @@ function addRoutingUI(map) {
     });
   });
   
-  // clear button
   document.getElementById('clearRouteBtn')?.addEventListener('click', () => {
     RoutingModule.clearRoute();
     document.getElementById('routeInfo').textContent = 'Click an amenity to get directions';
     document.getElementById('clearRouteBtn').style.display = 'none';
   });
   
-  // default to walking
   window.currentRoutingMode = 'walking';
 }
 

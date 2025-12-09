@@ -168,7 +168,6 @@ class RoutesWithinRadius(APIView):
 
 
 class AreaDensity(APIView):
-    """Get areas with amenity counts for choropleth visualization"""
     permission_classes = [AllowAny]
     def get(self, request):
         # optional category filter
@@ -204,7 +203,6 @@ class AreaDensity(APIView):
 
 
 class SearchAmenities(APIView):
-    """Search amenities by name, operator, cuisine, or address"""
     permission_classes = [AllowAny]
     def get(self, request):
         query = request.query_params.get("q", "").strip()

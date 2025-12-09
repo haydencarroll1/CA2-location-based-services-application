@@ -1,16 +1,3 @@
-"""
-Django management command to import amenities from OpenStreetMap into the database.
-
-This command fetches amenities from the Overpass API for each Area polygon stored
-in the database, then creates Amenity records tagged with source_ref to avoid duplicates.
-
-Usage:
-    python manage.py import_osm_amenities                    # Import for all areas
-    python manage.py import_osm_amenities --area "Drumcondra" # Import for specific area
-    python manage.py import_osm_amenities --reset            # Clear OSM data and reimport
-    python manage.py import_osm_amenities --dry-run          # Preview without saving
-"""
-
 import time
 import urllib.request
 import urllib.parse

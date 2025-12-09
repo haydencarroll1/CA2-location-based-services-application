@@ -34,10 +34,6 @@ const WeatherModule = (function() {
   let weatherControl = null;
   let currentWeather = null;
 
-  /**
-   * Initialize weather module
-   * @param {L.Map} leafletMap - Leaflet map instance
-   */
   function init(leafletMap) {
     map = leafletMap;
     
@@ -50,11 +46,6 @@ const WeatherModule = (function() {
     console.log('[Weather] Module initialized');
   }
 
-  /**
-   * Fetch weather data from Open-Meteo
-   * @param {number} lat - Latitude
-   * @param {number} lng - Longitude
-   */
   async function fetchWeather(lat, lng) {
     const params = new URLSearchParams({
       latitude: lat,
@@ -85,9 +76,6 @@ const WeatherModule = (function() {
     }
   }
 
-  /**
-   * Parse weather API response
-   */
   function parseWeatherData(data) {
     const current = data.current;
     const weatherInfo = WEATHER_CODES[current.weather_code] || { icon: '❓', desc: 'Unknown' };
@@ -106,9 +94,6 @@ const WeatherModule = (function() {
     };
   }
 
-  /**
-   * Add weather widget to map
-   */
   function addWeatherWidget() {
     weatherControl = L.control({ position: 'topright' });
     
@@ -135,9 +120,6 @@ const WeatherModule = (function() {
     addWidgetStyles();
   }
 
-  /**
-   * Generate widget HTML
-   */
   function getWidgetHTML(weather, loading = false) {
     if (loading) {
       return `
@@ -168,9 +150,6 @@ const WeatherModule = (function() {
     `;
   }
 
-  /**
-   * Update weather widget with new data
-   */
   function updateWeatherWidget(weather, error = null) {
     const widget = document.getElementById('weatherWidget');
     if (widget) {
@@ -182,9 +161,6 @@ const WeatherModule = (function() {
     }
   }
 
-  /**
-   * Add widget styles
-   */
   function addWidgetStyles() {
     if (document.getElementById('weather-widget-styles')) return;
     
@@ -264,10 +240,6 @@ const WeatherModule = (function() {
     document.head.appendChild(style);
   }
 
-  /**
-   * Get weather-based recommendation
-   * Useful for suggesting indoor vs outdoor activities
-   */
   function getRecommendation() {
     if (!currentWeather) return null;
     
@@ -307,15 +279,10 @@ const WeatherModule = (function() {
     };
   }
 
-  /**
-   * Update weather when user location changes
-   * @param {L.LatLng} latlng - New location
-   */
   function updateForLocation(latlng) {
     fetchWeather(latlng.lat, latlng.lng);
   }
 
-  // Public API
   return {
     init,
     fetchWeather,
