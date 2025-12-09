@@ -237,6 +237,13 @@
         <path d="M2 12h20"/>
       </svg>
     </button>
+    <button class="map-control-btn" id="toggleHeatmap" title="Toggle heatmap">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <circle cx="12" cy="12" r="6" opacity="0.6"/>
+        <circle cx="12" cy="12" r="9" opacity="0.3"/>
+      </svg>
+    </button>
     <button class="map-control-btn" id="themeToggle" title="Toggle light/dark mode">
       <svg class="theme-icon theme-icon--sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="5"/>
@@ -432,9 +439,7 @@ window.addEventListener("DOMContentLoaded", function() {
       }
     };
 
-    // =========================================================================
     // MAP INITIALIZATION
-    // =========================================================================
     const map = L.map("map", {
       scrollWheelZoom: true,
       zoomControl: false,
@@ -516,6 +521,68 @@ window.addEventListener("DOMContentLoaded", function() {
       }
       if (mapElement) {
         mapElement.classList.toggle("map--satellite", isSatellite);
+      }
+    });
+
+    // =========================================================================
+    // HEATMAP LAYER
+    // =========================================================================
+    let heatmapLayer = null;
+    let isHeatmapActive = false;
+
+    async function loadHeatmapData() {
+      try {
+        const response = await fetch("/api/amenities/");
+        const data = await response.json();
+        
+        // Extract coordinates for heatmap [lat, lng, intensity]
+        const heatData = data.features.map(f => {
+          const coords = f.geometry.coordinates;
+          return [coords[1], coords[0], 1]; // lat, lng, intensity
+        });
+        
+        return heatData;
+      } catch (error) {
+        console.error("[Heatmap] Failed to load data:", error);
+        return [];
+      }
+    }
+
+    document.getElementById("toggleHeatmap").addEventListener("click", async () => {
+      const btn = document.getElementById("toggleHeatmap");
+      
+      if (isHeatmapActive) {
+        // Remove heatmap
+        if (heatmapLayer && map.hasLayer(heatmapLayer)) {
+          map.removeLayer(heatmapLayer);
+        }
+        btn.classList.remove("active");
+        isHeatmapActive = false;
+      } else {
+        // Show loading
+        btn.classList.add("active");
+        
+        // Load data and create heatmap
+        const heatData = await loadHeatmapData();
+        
+        if (heatData.length > 0) {
+          heatmapLayer = L.heatLayer(heatData, {
+            radius: 25,
+            blur: 15,
+            maxZoom: 17,
+            max: 1.0,
+            gradient: {
+              0.2: '#3b82f6',
+              0.4: '#22d3ee', 
+              0.6: '#22c55e',
+              0.8: '#facc15',
+              1.0: '#ef4444'
+            }
+          }).addTo(map);
+          isHeatmapActive = true;
+        } else {
+          btn.classList.remove("active");
+        }
       }
     });
 
@@ -1479,27 +1546,28 @@ window.addEventListener("DOMContentLoaded", function() {
     searchInputs.forEach(input => {
       input.addEventListener("input", () => {
         if (searchDebounce) clearTimeout(searchDebounce);
-        const value = input.value.trim().toLowerCase();
+        const value = input.value.trim();
         searchDebounce = setTimeout(() => {
-          state.searchTerm = value;
+          state.searchTerm = value.toLowerCase();
           searchInputs.forEach(other => {
             if (other !== input) other.value = input.value;
           });
           
-          // If we have loaded results, filter them; otherwise search API
-          if (state.lastFeatures.length > 0) {
-            refilterResults();
-          } else if (value.length >= 2) {
+          // Always search API when typing 2+ characters
+          if (value.length >= 2) {
             searchAmenities(value);
+          } else if (value.length === 0 && state.lastFeatures.length > 0) {
+            // Clear search - show all loaded results
+            refilterResults();
           }
-        }, 300);
+        }, 400);
       });
       
       // Also search on Enter key
       input.addEventListener("keydown", e => {
         if (e.key === "Enter") {
           e.preventDefault();
-          const value = input.value.trim().toLowerCase();
+          const value = input.value.trim();
           if (value.length >= 2) {
             searchAmenities(value);
           }

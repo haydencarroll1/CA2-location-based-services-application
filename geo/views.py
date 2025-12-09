@@ -167,6 +167,42 @@ class RoutesWithinRadius(APIView):
         return Response(serializer.data)
 
 
+class AreaDensity(APIView):
+    """Get areas with amenity counts for choropleth visualization"""
+    permission_classes = [AllowAny]
+    def get(self, request):
+        # optional category filter
+        category = request.query_params.get("category")
+        
+        # get all areas with amenity counts using spatial join
+        from django.db.models import Count, Q
+        
+        # Build filter for amenities within each area's boundary
+        filter_kwargs = {}
+        if category:
+            filter_kwargs['category'] = category
+        
+        areas = Area.objects.all()
+        result = []
+        
+        for area in areas:
+            # Count amenities within this area's boundary
+            qs = Amenity.objects.filter(location__within=area.boundary)
+            if category:
+                qs = qs.filter(category=category)
+            count = qs.count()
+            
+            # Serialize area with count
+            area_data = AreaGeoSerializer(area).data
+            area_data['properties']['amenity_count'] = count
+            result.append(area_data)
+        
+        return Response({
+            'type': 'FeatureCollection',
+            'features': result
+        })
+
+
 class SearchAmenities(APIView):
     """Search amenities by name, operator, cuisine, or address"""
     permission_classes = [AllowAny]

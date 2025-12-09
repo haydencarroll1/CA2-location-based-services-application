@@ -5,7 +5,7 @@ from rest_framework.routers import DefaultRouter
 from geo.views import (
     AmenityViewSet, AreaViewSet, RouteViewSet, FavoriteViewSet,
     NearestAmenities, AmenitiesWithinArea, RoutesIntersectingArea,
-    AmenitiesWithinRadius, RoutesWithinRadius, SearchAmenities
+    AmenitiesWithinRadius, RoutesWithinRadius, SearchAmenities, AreaDensity
 )
 
 router = DefaultRouter()
@@ -25,5 +25,6 @@ urlpatterns = [
     path("api/amenities/search", SearchAmenities.as_view()),
     path("api/routes/intersecting", RoutesIntersectingArea.as_view()),
     path("api/routes/radius", RoutesWithinRadius.as_view()),
+    path("api/areas/density", AreaDensity.as_view()),
     path("", include("geo.urls")),
 ]
